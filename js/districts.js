@@ -4,7 +4,8 @@
 // ============================================================
 
 import {
-  getZonesForDistrict, getChurchesForZone, getUnzonedChurchesForDistrict, cascadeDeleteChurch, saveAll
+  districts, zones, churches, pastors, churchAssignments,
+  getZonesForDistrict, getChurchesForZone, getUnzonedChurchesForDistrict, cascadeDeleteChurch, saveAll, nextId
 } from './data.js';
 import {
   icon, showToast, esc, pastorAvatar, statusBadge, assignmentBadge,
