@@ -683,6 +683,10 @@ window.deleteChurchFromDistrict = function(churchId) {
 // ── Assign Pastor to Church (from district view) ──────────────
 window.openAssignPastorToChurch = function(churchId) {
   if (window.openAddAssignmentModal) {
+    // Tell assignments module to return to Districts after saving (not switch to Assignments view)
+    if (window.setAssignmentAfterSave) {
+      window.setAssignmentAfterSave(() => renderDistrictsList());
+    }
     window.openAddAssignmentModal(null, churchId);
   } else {
     navigate('assignments');

@@ -14,6 +14,11 @@ import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 const TODAY = new Date().toISOString().split('T')[0];
 let currentTab = 'active';
 
+// Optional callback: called after saveAssignment() instead of renderAssignments()
+// Used when the modal is opened from other pages (e.g. Districts) to prevent navigation switch.
+let _afterSaveCallback = null;
+window.setAssignmentAfterSave = function(cb) { _afterSaveCallback = cb; };
+
 // ── Render Assignments Page ───────────────────────────────────
 export function renderAssignments() {
   const content = document.getElementById('page-content');
@@ -378,7 +383,14 @@ window.saveAssignment = function() {
   saveAll();
   updateNavCounts();
   closeModal();
-  renderAssignments();
+  // If opened from another page (e.g. Districts), return there instead of switching to Assignments.
+  if (_afterSaveCallback) {
+    const cb = _afterSaveCallback;
+    _afterSaveCallback = null;
+    cb();
+  } else {
+    renderAssignments();
+  }
 };
 
 // ── Close Assignment ──────────────────────────────────────────
