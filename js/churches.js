@@ -8,7 +8,7 @@ import {
 import {
   icon, showToast, esc, pastorAvatar, emptyState, confirmDelete, debounce
 } from './utils.js';
-import { openModal, closeModal } from './app.js';
+import { openModal, closeModal, updateNavCounts } from './app.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
 let currentView = 'all'; // 'all', 'vacant', 'international'
@@ -21,18 +21,11 @@ export function renderChurches() {
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
-      <!-- Desktop Tabs -->
-      <div class="desktop-tabs">
+      <div class="segmented-control" style="width:100%">
         ${renderTab('all', 'All Churches', 'church')}
         ${renderTab('vacant', 'Vacant', 'alert-triangle')}
         ${renderTab('international', 'International', 'globe')}
       </div>
-      <!-- Mobile Dropdown -->
-      <select class="mobile-tabs-dropdown hidden" onchange="switchChurchView(this.value)">
-        <option value="all" ${currentView === 'all' ? 'selected' : ''}>All Churches</option>
-        <option value="vacant" ${currentView === 'vacant' ? 'selected' : ''}>Vacant</option>
-        <option value="international" ${currentView === 'international' ? 'selected' : ''}>International</option>
-      </select>
     </div>
 
     <div class="filter-bar">
@@ -53,10 +46,8 @@ export function renderChurches() {
 }
 
 function renderTab(id, label, iconName) {
-  const style = currentView === id
-    ? 'background:var(--accent);color:#fff;border-color:var(--accent)'
-    : 'background:var(--bg-elevated);color:var(--text-muted)';
-  return `<button class="btn btn-sm" style="${style}; white-space:nowrap" onclick="switchChurchView('${id}')">
+  const isActive = currentView === id;
+  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchChurchView('${id}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }
@@ -227,7 +218,7 @@ window.saveChurch = function(id = null) {
     const c = churches.find(x => x.church_id === id);
     if (!c) return;
     Object.assign(c, { church_name: name, church_address: address||null, district_id: distId, zone_id: zoneId, notes: notes||null, is_international: isIntl });
-    showToast(`"${name}" updated.`, 'success');
+    showToast(`"${name}" updated. District reflects these changes.`, 'success');
   } else {
     churches.push({
       church_id: nextId('church'),
@@ -239,9 +230,10 @@ window.saveChurch = function(id = null) {
       notes: notes || null,
       created_at: TODAY
     });
-    showToast(`"${name}" added.`, 'success');
+    showToast(`"${name}" added. District reflects this new church.`, 'success');
   }
   saveAll();
+  updateNavCounts();
   closeModal();
   renderChurches();
 };
@@ -249,10 +241,11 @@ window.saveChurch = function(id = null) {
 window.deleteChurch = function(id) {
   const c = churches.find(x => x.church_id === id);
   if (!c) return;
-  confirmDelete(c.church_name, () => {
+  confirmDelete(c.church_name + " (Removes it from District & Zone)", () => {
     cascadeDeleteChurch(id);
-    showToast(`"${c.church_name}" deleted.`, 'info');
+    showToast(`"${c.church_name}" has been deleted. District updated.`, 'info');
     saveAll();
+    updateNavCounts();
     renderChurches();
   });
 };

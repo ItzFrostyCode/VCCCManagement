@@ -86,6 +86,22 @@ export function renderHelp() {
       <!-- Right Column: How-To Guides -->
       <div style="display:flex;flex-direction:column;gap:20px">
         
+        <!-- Adding a Pastor & Undeployed Status -->
+        <div class="card">
+          <div class="card-title">${icon('user-plus','icon-sm')} Adding a Pastor (Undeployed)</div>
+          <p style="font-size:13px;color:var(--text-secondary);margin-top:8px">
+            The very first step when setting up the system is adding a Pastor.
+          </p>
+          <ul style="margin:8px 0 12px 20px;font-size:13px;color:var(--text-muted);line-height:1.6">
+            <li>Go to the <strong>Pastors</strong> page and click "Add Pastor".</li>
+            <li>You will notice their initial status is forced to <strong>Undeployed</strong>.</li>
+          </ul>
+          <div class="alert alert-purple" style="margin-top:12px;margin-bottom:0">
+            ${icon('info','icon-sm')} <div><strong>Why "Undeployed"?</strong><br>
+            When a pastor is newly created in the database, they don't have a church assignment yet. The system labels them "Undeployed" because they are ready and waiting in the pool. Once you assign them to a church, their status will automatically upgrade to <strong>Active</strong>.</div>
+          </div>
+        </div>
+
         <!-- How to Add Church -->
         <div class="card">
           <div class="card-title">${icon('plus-circle','icon-sm')} How to Add a Church</div>
@@ -144,7 +160,7 @@ export function renderHelp() {
             </div>
             <div>
               <div style="font-size:13px;font-weight:600;margin-bottom:2px">Where is the data stored?</div>
-              <div style="font-size:13px;color:var(--text-muted)">Currently, data is stored in your browser's memory (RAM). It resets if you refresh the page (for this prototype version).</div>
+              <div style="font-size:13px;color:var(--text-muted)">Data is saved persistently in your browser's <strong>Local Storage</strong>. It will remain safe even if you refresh the page or restart your browser. For long-term emergency safety, use the "Data" page to download a full CSV Backup.</div>
             </div>
           </div>
         </div>

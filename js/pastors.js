@@ -10,7 +10,7 @@ import {
   icon, showToast, statusBadge, assignmentBadge, formatDate, formatDateRange,
   esc, pastorAvatar, statusOptions, readImageFile, emptyState, confirmDelete, debounce
 } from './utils.js';
-import { openModal, closeModal, navigate } from './app.js';
+import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 
 let currentView = 'all'; // all, active, undeployed, suspended, interim
 
@@ -22,22 +22,13 @@ export function renderPastors() {
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
-      <!-- Desktop Tabs -->
-      <div class="desktop-tabs">
+      <div class="segmented-control" style="width:100%">
         ${renderTab('all', 'All Pastors', 'users')}
         ${renderTab('active', 'Active', 'check-circle')}
         ${renderTab('undeployed', 'Undeployed', 'user-x')}
         ${renderTab('suspended', 'Suspended', 'ban')}
         ${renderTab('interim', 'Interim', 'timer')}
       </div>
-      <!-- Mobile Dropdown -->
-      <select class="mobile-tabs-dropdown hidden" onchange="switchView(this.value)">
-        <option value="all" ${currentView === 'all' ? 'selected' : ''}>${icon('users','icon-xs')} All Pastors</option>
-        <option value="active" ${currentView === 'active' ? 'selected' : ''}>Active</option>
-        <option value="undeployed" ${currentView === 'undeployed' ? 'selected' : ''}>Undeployed</option>
-        <option value="suspended" ${currentView === 'suspended' ? 'selected' : ''}>Suspended</option>
-        <option value="interim" ${currentView === 'interim' ? 'selected' : ''}>Interim</option>
-      </select>
     </div>
 
     <div class="filter-bar">
@@ -55,10 +46,8 @@ export function renderPastors() {
 }
 
 function renderTab(id, label, iconName) {
-  const style = currentView === id
-    ? 'background:var(--accent);color:#fff;border-color:var(--accent)'
-    : 'background:var(--bg-elevated);color:var(--text-muted)';
-  return `<button class="btn btn-sm" style="${style}; white-space:nowrap" onclick="switchView('${id}')">
+  const isActive = currentView === id;
+  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchView('${id}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }
@@ -184,16 +173,16 @@ function buildPastorForm(p = {}) {
           ${statusOptions(p.status_code || 'undeployed')}
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group span-2">
         <label>${icon('file-text','icon-xs')} Notes</label>
-        <input type="text" id="f-notes" placeholder="Optional notes" value="${esc(p.notes||'')}">
+        <textarea id="f-notes" placeholder="Optional notes">${esc(p.notes||'')}</textarea>
       </div>
     </div>
 
     <div class="form-section-title">${icon('heart','icon-xs')} Wife's Information</div>
     <div class="form-grid">
       <div class="form-group">
-        <label>${icon('heart','icon-xs')} Wife's Name</label>
+        <label>${icon('user','icon-xs')} Wife's Name</label>
         <input type="text" id="f-wife" placeholder="Wife's full name (optional)" value="${esc(p.wife_name||'')}">
       </div>
       <div class="form-group">
@@ -347,6 +336,7 @@ window.savePastor = async function(id = null) {
     showToast(`${name} added successfully.`, 'success');
   }
   saveAll();
+  updateNavCounts();
   closeModal();
   renderPastors();
 };
@@ -417,6 +407,7 @@ window.deletePastor = function(id) {
     });
     showToast(`${p.pastor_name} deleted.`, 'info');
     saveAll();
+    updateNavCounts();
     renderPastors();
   });
 };

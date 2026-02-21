@@ -11,7 +11,7 @@ import {
   icon, showToast, esc, pastorAvatar, statusBadge, assignmentBadge,
   emptyState, confirmDelete, debounce
 } from './utils.js';
-import { openModal, closeModal, navigate } from './app.js';
+import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -415,6 +415,7 @@ window.saveDistrict = function(id = null) {
     showToast('District added.', 'success');
   }
   saveAll();
+  updateNavCounts();
   closeModal();
   renderDistricts();
 };
@@ -436,6 +437,7 @@ window.deleteDistrict = function(id) {
     if (idx > -1) districts.splice(idx, 1);
     showToast(`District "${d.district_name}" deleted.`, 'info');
     saveAll();
+    updateNavCounts();
     renderDistricts();
   });
 };
@@ -530,6 +532,7 @@ window.saveZone = function(id, districtId) {
     showToast(`Zone "${name}" created.`, 'success');
   }
   saveAll();
+  updateNavCounts();
   closeModal();
   renderDistricts();
 };
@@ -545,6 +548,7 @@ window.deleteZone = function(id) {
     if (idx > -1) zones.splice(idx, 1);
     showToast(`Zone "${z.zone_name}" and its churches deleted.`, 'info');
     saveAll();
+    updateNavCounts();
     renderDistricts();
   });
 };
@@ -617,6 +621,7 @@ window.saveChurchInDistrict = function(districtId, zoneId) {
   });
   showToast(`"${name}" added.`, 'success');
   saveAll();
+  updateNavCounts();
   closeModal();
   renderDistricts();
 };
@@ -658,6 +663,7 @@ window.updateChurchInDistrict = function(churchId) {
   c.notes          = notes || null;
   showToast(`"${name}" updated.`, 'success');
   saveAll();
+  updateNavCounts();
   closeModal();
   renderDistricts();
 };
@@ -665,10 +671,11 @@ window.updateChurchInDistrict = function(churchId) {
 window.deleteChurchFromDistrict = function(churchId) {
   const c = churches.find(x => x.church_id === churchId);
   if (!c) return;
-  confirmDelete(c.church_name, () => {
+  confirmDelete(c.church_name + " from the district", () => {
     cascadeDeleteChurch(churchId);
-    showToast(`"${c.church_name}" deleted.`, 'info');
+    showToast(`"${c.church_name}" has been deleted. District updated.`, 'info');
     saveAll();
+    updateNavCounts();
     renderDistricts();
   });
 };

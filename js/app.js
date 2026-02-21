@@ -25,6 +25,21 @@ export function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
+  document.querySelectorAll('.b-nav-item').forEach(el => {
+    if (el.dataset.page) {
+      el.classList.toggle('active', el.dataset.page === page);
+    }
+  });
+
+  const fab = document.querySelector('.fab-container');
+  if (fab) {
+    if (['pastors', 'churches', 'districts', 'assignments'].includes(page)) {
+      fab.classList.remove('hidden');
+    } else {
+      fab.classList.add('hidden');
+    }
+  }
+
   if (window.innerWidth <= 1024) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
@@ -36,6 +51,7 @@ export function navigate(page) {
     districts:   'Districts & Zones',
     churches:    'Churches',
     reports:     'Reports',
+    data:        'Data',
     help:        'Help & Guide',
   };
   document.getElementById('topbar-title').textContent = titles[page] || page;
@@ -71,6 +87,19 @@ export function closeModal() {
 export function handleOverlayClick(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
 }
+
+window.handleFabClick = function() {
+  if (currentPage === 'pastors' && window.openAddPastorModal) {
+    window.openAddPastorModal();
+  } else if (currentPage === 'churches' && window.openAddChurchModal) {
+    window.openAddChurchModal();
+  } else if (currentPage === 'districts' && window.openAddDistrictModal) {
+    window.openAddDistrictModal();
+  } else if (currentPage === 'assignments' && window.openAddAssignmentModal) {
+    window.openAddAssignmentModal();
+  }
+};
+
 window.toggleSidebar = function() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -105,7 +134,7 @@ function renderDashboard() {
       </div>
     </div>` : ''}
     <div class="stats-grid">
-      <div class="stat-card" onclick="navigate('pastors')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">${icon('users', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${totalPastors}</div>
@@ -113,7 +142,7 @@ function renderDashboard() {
           <div class="stat-change text-success">${activePastors} active</div>
         </div>
       </div>
-      <div class="stat-card" onclick="navigate('churches')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--success-dim);color:var(--success)">${icon('church', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${mindanaoChurches}</div>
@@ -121,7 +150,7 @@ function renderDashboard() {
           <div class="stat-change text-muted">${internationalChurches} international</div>
         </div>
       </div>
-      <div class="stat-card" onclick="navigate('churches')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--info-dim);color:var(--info)">${icon('globe', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${internationalChurches}</div>
@@ -129,7 +158,7 @@ function renderDashboard() {
           <div class="stat-change text-muted">Churches abroad</div>
         </div>
       </div>
-      <div class="stat-card" onclick="navigate('districts')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--purple-dim);color:var(--purple)">${icon('map', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${totalDistricts}</div>
@@ -137,7 +166,7 @@ function renderDashboard() {
           <div class="stat-change text-muted">${totalZones} zones</div>
         </div>
       </div>
-      <div class="stat-card" onclick="navigate('assignments')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--warning-dim);color:var(--warning)">${icon('user-x', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${undeployedPastors}</div>
@@ -145,7 +174,7 @@ function renderDashboard() {
           <div class="stat-change text-muted">Ready for assignment</div>
         </div>
       </div>
-      <div class="stat-card" onclick="navigate('assignments')" style="cursor:pointer">
+      <div class="stat-card">
         <div class="stat-icon" style="background:var(--danger-dim);color:var(--danger)">${icon('ban', 'icon-md')}</div>
         <div class="stat-info">
           <div class="stat-value">${suspendedPastors}</div>
@@ -253,30 +282,42 @@ function renderDataPage() {
           <p class="text-muted" style="margin-bottom:24px">
             Manage your local database. Export data for analysis or safely import a backup.
           </p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px">
-            <!-- Standard Full Database Export -->
-            <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:20px;grid-column: 1 / -1">
-              <h3 style="font-size:16px;font-weight:600;margin-bottom:12px">Full Database Backup</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Download the entire raw database structure. Keep this safe to restore your data later.</p>
-              <button class="btn btn-primary w-full" onclick="downloadCSV()">${icon('download')} Download Full Backup</button>
-            </div>
-            <!-- Custom User Exports -->
-            <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:20px">
-              <h3 style="font-size:16px;font-weight:600;margin-bottom:12px">Export Spreadsheets</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Download custom formatted data views for Google Sheets or Excel.</p>
-              <div style="display:flex;flex-direction:column;gap:12px">
-                <button class="btn btn-secondary w-full" onclick="downloadPastorsSheet()">${icon('users')} Pastors Sheet</button>
-                <button class="btn btn-secondary w-full" onclick="downloadChurchesSheet()">${icon('church')} Churches Sheet</button>
-                <button class="btn btn-secondary w-full" onclick="downloadDistrictsSheet()">${icon('map')} Districts & Zones Sheet</button>
-                <button class="btn btn-secondary w-full" onclick="downloadReportsSheet()">${icon('clipboard-list')} Assignments & Reports Sheet</button>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <!-- Full Database Backup (Top, Full Width) -->
+            <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+              <div style="margin-bottom:16px">
+                <h3 style="font-size:18px;font-weight:600;margin-bottom:8px">Full Database Backup</h3>
+                <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Download the entire raw database structure. Keep this safe to restore your data later.</p>
               </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;font-weight:600" onclick="downloadCSV()">${icon('download')} Download Full Backup</button>
             </div>
-            <!-- Import -->
-            <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:20px">
-              <h3 style="font-size:16px;font-weight:600;margin-bottom:12px">Import Data</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Restore from a Full Database Backup CSV file. <strong>New records will be merged</strong> with existing ones without overwriting them.</p>
-              <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleFileImport(this)">
-              <button class="btn btn-secondary w-full" onclick="document.getElementById('csv-upload').click()">${icon('upload')} Select Backup File</button>
+
+            <!-- Side-by-Side Cards (Stack on Mobile) -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:20px">
+              <!-- Custom User Exports -->
+              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
+                <div style="flex-grow:1;margin-bottom:24px">
+                  <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">Export Spreadsheets</h3>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Download custom formatted data views for Google Sheets or Excel.</p>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="downloadPastorsSheet()">${icon('users')} Pastors Sheet</button>
+                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="downloadChurchesSheet()">${icon('church')} Churches Sheet</button>
+                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="downloadDistrictsSheet()">${icon('map')} Districts & Zones Sheet</button>
+                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="downloadReportsSheet()">${icon('clipboard-list')} Assignments & Reports Sheet</button>
+                </div>
+              </div>
+
+              <!-- Import -->
+              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
+                <div style="flex-grow:1;margin-bottom:24px">
+                  <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">Import Data</h3>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">Restore from a Full Database Backup CSV file.</p>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5"><strong>New records will be merged</strong> with existing ones without overwriting them.</p>
+                </div>
+                <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleFileImport(this)">
+                <button class="btn btn-secondary w-full" style="justify-content:center;padding:12px;font-size:14px;font-weight:600;background:var(--bg-base)" onclick="document.getElementById('csv-upload').click()">${icon('upload')} Select Backup File</button>
+              </div>
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ import {
   icon, showToast, esc, pastorAvatar, statusBadge, assignmentBadge,
   assignmentTypeOptions, formatDate, formatDateRange, emptyState, debounce
 } from './utils.js';
-import { openModal, closeModal, navigate } from './app.js';
+import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
 let currentTab = 'active';
@@ -22,22 +22,13 @@ export function renderAssignments() {
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
-      <!-- Desktop Tabs -->
-      <div class="desktop-tabs">
+      <div class="segmented-control" style="width:100%">
         ${renderTab('active', 'Active', 'check-circle')}
         ${renderTab('undeployed', 'Undeployed', 'user-x')}
         ${renderTab('suspended', 'Suspended', 'ban')}
         ${renderTab('interim', 'Interim', 'timer')}
         ${renderTab('history', 'History', 'clock')}
       </div>
-      <!-- Mobile Dropdown -->
-      <select class="mobile-tabs-dropdown hidden" onchange="switchAssignTab(this.value)">
-        <option value="active" ${currentTab === 'active' ? 'selected' : ''}>Active</option>
-        <option value="undeployed" ${currentTab === 'undeployed' ? 'selected' : ''}>Undeployed</option>
-        <option value="suspended" ${currentTab === 'suspended' ? 'selected' : ''}>Suspended</option>
-        <option value="interim" ${currentTab === 'interim' ? 'selected' : ''}>Interim</option>
-        <option value="history" ${currentTab === 'history' ? 'selected' : ''}>History</option>
-      </select>
     </div>
     <div id="assignments-content"></div>
   </div>`;
@@ -47,10 +38,8 @@ export function renderAssignments() {
 }
 
 function renderTab(id, label, iconName) {
-  const style = currentTab === id
-    ? 'background:var(--accent);color:#fff;border-color:var(--accent)'
-    : 'background:var(--bg-elevated);color:var(--text-muted)';
-  return `<button class="btn btn-sm" style="${style}; white-space:nowrap" onclick="switchAssignTab('${id}')">
+  const isActive = currentTab === id;
+  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchAssignTab('${id}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }
@@ -387,6 +376,7 @@ window.saveAssignment = function() {
 
   showToast(`${p.pastor_name} assigned successfully.`, 'success');
   saveAll();
+  updateNavCounts();
   closeModal();
   renderAssignments();
 };
@@ -401,6 +391,7 @@ window.closeAssignment = function(assignmentId) {
     if (p) p.status_code = 'undeployed';
     showToast('Assignment closed. Pastor is now undeployed.', 'info');
     saveAll();
+    updateNavCounts();
     renderAssignments();
   }
 };
@@ -450,6 +441,7 @@ window.confirmSuspend = function() {
 
   showToast(`${p.pastor_name} has been suspended.`, 'warning');
   saveAll();
+  updateNavCounts();
   closeModal();
   renderAssignments();
 };
