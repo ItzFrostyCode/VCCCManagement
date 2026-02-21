@@ -96,19 +96,36 @@ function fromCSV(values, keys) {
   const obj = {};
   keys.forEach((k, i) => {
     let val = values[i];
-    // Attempt basic type conversion
-    if (val === 'true') val = true;
-    if (val === 'false') val = false;
-    if (val === '') val = null; 
-    else if (!isNaN(Number(val)) && (k.endsWith('_id') || k.endsWith('date') === false)) {
-       // Only convert to number if it looks like an ID and is not a date string (unlikely to be number but just in case)
-       // Actually, be careful. Phone numbers might look like numbers. 
-       // Only convert ID fields? Or just leave as strings if consistent. 
-       // In JS, persistence is JSON, so types are preserved. CSV loses types.
-       // Let's assume IDs are numbers if they parse as numbers. 
-       const num = Number(val);
-       if (Number.isInteger(num)) val = num; 
+    
+    // Normalize empty strings to null
+    if (val === '') {
+      obj[k] = null;
+      return;
     }
+
+    // Attempt basic type conversion
+    const lowVal = String(val).toLowerCase();
+    
+    // Boolean mapping
+    if (lowVal === 'true' || lowVal === 'yes') {
+      obj[k] = true;
+      return;
+    }
+    if (lowVal === 'false' || lowVal === 'no') {
+      obj[k] = false;
+      return;
+    }
+
+    // Number conversion (targeting IDs, excluding contact numbers and dates)
+    if (k.endsWith('_id') || k === 'assignment_id') {
+      const num = Number(val);
+      if (!isNaN(num)) {
+        obj[k] = num;
+        return;
+      }
+    }
+
+    // Default: Keep as string
     obj[k] = val;
   });
   return obj;
@@ -126,24 +143,85 @@ export function parseDatabaseFromCSV(csvText) {
     counters: {}
   };
 
-  lines.forEach(line => {
-    if (!line.trim()) return;
-    const parts = parseCSVLine(line);
-    const type = parts[0];
-    const vals = parts.slice(1);
+  if (lines.length === 0) return data;
 
-    switch (type) {
-      case 'DISTRICT': data.districts.push(fromCSV(vals, COLS.DISTRICT)); break;
-      case 'ZONE':     data.zones.push(fromCSV(vals, COLS.ZONE)); break;
-      case 'CHURCH':   data.churches.push(fromCSV(vals, COLS.CHURCH)); break;
-      case 'PASTOR':   data.pastors.push(fromCSV(vals, COLS.PASTOR)); break;
-      case 'ASSIGN':   data.churchAssignments.push(fromCSV(vals, COLS.ASSIGN)); break;
-      case 'EVENT':    data.pastorEvents.push(fromCSV(vals, COLS.EVENT)); break;
-      case 'COUNTER':  
-        if (vals[0] && vals[1]) data.counters[vals[0]] = Number(vals[1]); 
-        break;
+  // Check if first line is our Backup header or a Custom Sheet header
+  const firstLine = lines[0];
+  const isBackup = firstLine.startsWith('RecordType,Data...');
+
+  if (isBackup) {
+    lines.slice(1).forEach(line => {
+      if (!line.trim()) return;
+      const parts = parseCSVLine(line);
+      const type = parts[0];
+      const vals = parts.slice(1);
+
+      switch (type) {
+        case 'DISTRICT': data.districts.push(fromCSV(vals, COLS.DISTRICT)); break;
+        case 'ZONE':     data.zones.push(fromCSV(vals, COLS.ZONE)); break;
+        case 'CHURCH':   data.churches.push(fromCSV(vals, COLS.CHURCH)); break;
+        case 'PASTOR':   data.pastors.push(fromCSV(vals, COLS.PASTOR)); break;
+        case 'ASSIGN':   data.churchAssignments.push(fromCSV(vals, COLS.ASSIGN)); break;
+        case 'EVENT':    data.pastorEvents.push(fromCSV(vals, COLS.EVENT)); break;
+        case 'COUNTER':  
+          if (vals[0] && vals[1]) data.counters[vals[0]] = Number(vals[1]); 
+          break;
+      }
+    });
+  } else {
+    // Attempt to handle custom sheets (Assignments, Churches, etc.)
+    const headers = parseCSVLine(firstLine).map(h => h.trim());
+    
+    // 1. Assignments Sheet: Pastor, Church, District, Type, Since
+    if (headers.includes('Pastor') && headers.includes('Church') && headers.includes('Type')) {
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const vals = parseCSVLine(line);
+        const row = {};
+        headers.forEach((h, i) => row[h] = vals[i]);
+
+        // Map names back to IDs
+        const p = pastors.find(x => x.pastor_name.toLowerCase() === (row['Pastor']||'').toLowerCase());
+        const c = churches.find(x => x.church_name.toLowerCase() === (row['Church']||'').toLowerCase());
+        const d = districts.find(x => x.district_name.toLowerCase() === (row['District']||'').toLowerCase());
+
+        if (p && c) {
+          data.churchAssignments.push({
+            pastor_id: p.pastor_id,
+            church_id: c.church_id,
+            district_id: d ? d.district_id : c.district_id,
+            assignment_type_code: (row['Type'] || 'regular').toLowerCase(),
+            start_date: row['Since'] || new Date().toISOString().split('T')[0],
+            notes: 'Imported from Assignments Sheet',
+            created_at: new Date().toISOString()
+          });
+        }
+      });
     }
-  });
+    // 2. Churches Sheet: church_id, church_name, church_address, district, zone, is_international, notes
+    else if (headers.includes('church_name') && headers.includes('district')) {
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const vals = parseCSVLine(line);
+        const row = {};
+        headers.forEach((h, i) => row[h] = vals[i]);
+
+        const d = districts.find(x => x.district_name.toLowerCase() === (row['district']||'').toLowerCase());
+        const z = zones.find(x => x.zone_name.toLowerCase() === (row['zone']||'').toLowerCase() && (!d || x.district_id === d.district_id));
+
+        data.churches.push({
+          church_id: row['church_id'] ? Number(row['church_id']) : null,
+          church_name: row['church_name'],
+          church_address: row['church_address'] || '',
+          district_id: d ? d.district_id : null,
+          zone_id: z ? z.zone_id : null,
+          is_international: (row['is_international'] || '').toLowerCase() === 'yes',
+          notes: row['notes'] || '',
+          created_at: new Date().toISOString()
+        });
+      });
+    }
+  }
 
   return data;
 }

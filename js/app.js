@@ -1349,9 +1349,44 @@ window.handleFileImport = async function(input) {
     try {
       const data = parseDatabaseFromCSV(e.target.result);
       if (!data) throw new Error('Failed to parse CSV');
-      mergeData(data);
-      alert('Backup merged successfully!');
-      window.location.reload();
+      
+      const stats = mergeData(data);
+      
+      const modalBody = `
+        <div style="padding: 10px 0;">
+          <p style="margin-bottom: 20px; color: var(--text-muted);">Import process completed successfully. Here is the summary of changes:</p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--success-dim); border-radius: var(--radius-md); color: var(--success);">
+              ${icon('check-circle', 'icon-md')}
+              <div>
+                <div style="font-weight: 700; font-size: 15px;">${stats.added} Records Added</div>
+                <div style="font-size: 12px; opacity: 0.8;">New records successfully inserted into the database.</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--info-dim); border-radius: var(--radius-md); color: var(--info);">
+              ${icon('refresh-cw', 'icon-md')}
+              <div>
+                <div style="font-weight: 700; font-size: 15px;">${stats.replaced} Records Updated</div>
+                <div style="font-size: 12px; opacity: 0.8;">Existing records synced and updated with new information.</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-base); border-radius: var(--radius-md); border: 1px solid var(--border-light); color: var(--text-secondary);">
+              ${icon('skip-forward', 'icon-md')}
+              <div>
+                <div style="font-weight: 700; font-size: 15px;">${stats.skipped} Records Skipped</div>
+                <div style="font-size: 12px; opacity: 0.8;">Duplicates identified by name or ID and skipped to prevent clones.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      openModal(
+        `${icon('database')} Import Results`,
+        modalBody,
+        `<button class="btn btn-primary" onclick="window.location.reload()">Finish & Reload</button>`,
+        'modal-md'
+      );
     } catch (err) {
       console.error(err);
       alert('Error importing data. Please check the file format.');

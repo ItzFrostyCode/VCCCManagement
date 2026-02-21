@@ -190,12 +190,15 @@ export function replaceData(newData) {
  * Persists immediately.
  */
 export function mergeData(newData) {
+  const stats = { added: 0, skipped: 0, replaced: 0 };
+  
   const coerceIds = (arr, idFields) => {
     if (!arr) return;
     arr.forEach(item => {
       idFields.forEach(field => {
         if (item[field] !== null && item[field] !== undefined) {
-          item[field] = Number(item[field]);
+          const num = Number(item[field]);
+          if (!isNaN(num)) item[field] = num;
         }
       });
     });
@@ -210,62 +213,120 @@ export function mergeData(newData) {
 
   if (newData.districts) {
     newData.districts.forEach(nd => {
-      if (!districts.some(ed => ed.district_id === nd.district_id || ed.district_name.toLowerCase() === nd.district_name.toLowerCase())) {
+      const idx = districts.findIndex(ed => (nd.district_id && ed.district_id === nd.district_id));
+      const nameExists = districts.some(ed => ed.district_name.toLowerCase() === nd.district_name.toLowerCase());
+
+      if (idx > -1) {
+        districts[idx] = { ...districts[idx], ...nd };
+        stats.replaced++;
+      } else if (!nameExists) {
         districts.push(nd);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
 
   if (newData.zones) {
     newData.zones.forEach(nz => {
-      if (!zones.some(ez => ez.zone_id === nz.zone_id || ez.zone_name.toLowerCase() === nz.zone_name.toLowerCase())) {
+      const idx = zones.findIndex(ez => (nz.zone_id && ez.zone_id === nz.zone_id));
+      const nameExists = zones.some(ez => ez.zone_name.toLowerCase() === nz.zone_name.toLowerCase() && ez.district_id === nz.district_id);
+
+      if (idx > -1) {
+        zones[idx] = { ...zones[idx], ...nz };
+        stats.replaced++;
+      } else if (!nameExists) {
         zones.push(nz);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
 
   if (newData.churches) {
     newData.churches.forEach(nc => {
-      if (!churches.some(ec => ec.church_id === nc.church_id || ec.church_name.toLowerCase() === nc.church_name.toLowerCase())) {
+      const idx = churches.findIndex(ec => (nc.church_id && ec.church_id === nc.church_id));
+      const nameExists = churches.some(ec => ec.church_name.toLowerCase() === nc.church_name.toLowerCase());
+
+      if (idx > -1) {
+        churches[idx] = { ...churches[idx], ...nc };
+        stats.replaced++;
+      } else if (!nameExists) {
         churches.push(nc);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
 
   if (newData.pastors) {
     newData.pastors.forEach(np => {
-      if (!pastors.some(ep => ep.pastor_id === np.pastor_id || ep.pastor_name.toLowerCase() === np.pastor_name.toLowerCase())) {
+      const idx = pastors.findIndex(ep => (np.pastor_id && ep.pastor_id === np.pastor_id));
+      const nameExists = pastors.some(ep => ep.pastor_name.toLowerCase() === np.pastor_name.toLowerCase());
+
+      if (idx > -1) {
+        pastors[idx] = { ...pastors[idx], ...np };
+        stats.replaced++;
+      } else if (!nameExists) {
         pastors.push(np);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
 
   if (newData.churchAssignments) {
     newData.churchAssignments.forEach(na => {
-      if (!churchAssignments.some(ea => ea.assignment_id === na.assignment_id || (ea.pastor_id === na.pastor_id && ea.start_date === na.start_date && ea.assignment_type_code === na.assignment_type_code))) {
+      const idx = churchAssignments.findIndex(ea => (na.assignment_id && ea.assignment_id === na.assignment_id));
+      const exists = churchAssignments.some(ea => 
+        (ea.pastor_id === na.pastor_id && ea.church_id === na.church_id && ea.start_date === na.start_date)
+      );
+
+      if (idx > -1) {
+        churchAssignments[idx] = { ...churchAssignments[idx], ...na };
+        stats.replaced++;
+      } else if (!exists) {
         churchAssignments.push(na);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
 
   if (newData.pastorEvents) {
     newData.pastorEvents.forEach(ne => {
-      if (!pastorEvents.some(ee => ee.event_id === ne.event_id || (ee.pastor_id === ne.pastor_id && ee.event_date === ne.event_date && ee.event_type === ne.event_type))) {
+      const idx = pastorEvents.findIndex(ee => (ne.event_id && ee.event_id === ne.event_id));
+      const exists = pastorEvents.some(ee => 
+        (ee.pastor_id === ne.pastor_id && ee.event_date === ne.event_date && ee.event_type === ne.event_type)
+      );
+
+      if (idx > -1) {
+        pastorEvents[idx] = { ...pastorEvents[idx], ...ne };
+        stats.replaced++;
+      } else if (!exists) {
         pastorEvents.push(ne);
+        stats.added++;
+      } else {
+        stats.skipped++;
       }
     });
   }
   
-  // Recalculate counters based on max IDs
-  // Set counters to max existing ID so next ++counter produces max+1
-  counters.district   = districts.reduce((max, d) => Math.max(max, d.district_id || 0), 0);
-  counters.zone       = zones.reduce((max, z) => Math.max(max, z.zone_id || 0), 0);
-  counters.church     = churches.reduce((max, c) => Math.max(max, c.church_id || 0), 0);
-  counters.pastor     = pastors.reduce((max, p) => Math.max(max, p.pastor_id || 0), 0);
-  counters.assignment = churchAssignments.reduce((max, a) => Math.max(max, a.assignment_id || 0), 0);
-  counters.event      = pastorEvents.reduce((max, e) => Math.max(max, e.event_id || 0), 0);
+  // Recalculate counters
+  counters.district   = Math.max(counters.district,   districts.reduce((max, d) => Math.max(max, d.district_id || 0), 0));
+  counters.zone       = Math.max(counters.zone,       zones.reduce((max, z) => Math.max(max, z.zone_id || 0), 0));
+  counters.church     = Math.max(counters.church,     churches.reduce((max, c) => Math.max(max, c.church_id || 0), 0));
+  counters.pastor     = Math.max(counters.pastor,     pastors.reduce((max, p) => Math.max(max, p.pastor_id || 0), 0));
+  counters.assignment = Math.max(counters.assignment, churchAssignments.reduce((max, a) => Math.max(max, a.assignment_id || 0), 0));
+  counters.event      = Math.max(counters.event,      pastorEvents.reduce((max, e) => Math.max(max, e.event_id || 0), 0));
 
   saveAll();
+  return stats;
 }
 
 // ── Derived Helpers ──────────────────────────────────────────
