@@ -85,7 +85,8 @@ function reportSuspended() {
       .sort((a,b) => new Date(b.start_date)-new Date(a.start_date))[0];
     const prevChurch = suspendAssign?.origin_church_id ? churches.find(c => c.church_id === suspendAssign.origin_church_id) : null;
     return `<tr>
-      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div>${statusBadge(p.status_code)}</div></div></td>
+      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div></div></div></td>
+      <td data-label="Status">${statusBadge(p.status_code)}</td>
       <td data-label="Suspended On" class="td-muted">${suspendAssign ? formatDate(suspendAssign.start_date) : '—'}</td>
       <td data-label="Previous Church">${prevChurch ? esc(prevChurch.church_name) : '<span class="td-muted">—</span>'}</td>
       <td data-label="Reason" class="td-muted">${esc(suspendAssign?.notes)||'—'}</td>
@@ -93,7 +94,7 @@ function reportSuspended() {
   }).join('');
 
   return reportTable('Suspended Pastors', `<span class="badge badge-suspended">${suspended.length} pastors</span>`,
-    '<th>Pastor</th><th>Suspended On</th><th>Previous Church</th><th>Reason</th>', rows);
+    '<th>Pastor</th><th>Status</th><th>Suspended On</th><th>Previous Church</th><th>Reason</th>', rows, 'suspended');
 }
 
 // ── Undeployed ───────────────────────────────────────────────
@@ -105,7 +106,8 @@ function reportUndeployed() {
     const last = [...churchAssignments].filter(a => a.pastor_id === p.pastor_id).sort((a,b) => new Date(b.start_date)-new Date(a.start_date))[0];
     const lastChurch = last?.church_id ? churches.find(c => c.church_id === last.church_id) : null;
     return `<tr>
-      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div>${statusBadge(p.status_code)}</div></div></td>
+      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div></div></div></td>
+      <td data-label="Status">${statusBadge(p.status_code)}</td>
       <td data-label="Contact" class="td-muted">${esc(p.contact_number)||'—'}</td>
       <td data-label="Last Church">${lastChurch ? esc(lastChurch.church_name) : '<span class="td-muted">No prior assignment</span>'}</td>
       <td data-label="Last Active" class="td-muted">${last ? formatDate(last.end_date||last.start_date) : '—'}</td>
@@ -114,7 +116,7 @@ function reportUndeployed() {
   }).join('');
 
   return reportTable('Undeployed Pastors', `<span class="badge badge-undeployed">${undeployed.length} ready</span>`,
-    '<th>Pastor</th><th>Contact</th><th>Last Church</th><th>Last Active</th><th>Notes</th>', rows);
+    '<th>Pastor</th><th>Status</th><th>Contact</th><th>Last Church</th><th>Last Active</th><th>Notes</th>', rows, 'undeployed');
 }
 
 // ── Interim ──────────────────────────────────────────────────
@@ -126,7 +128,8 @@ function reportInterim() {
     const assign = churchAssignments.find(a => a.pastor_id === p.pastor_id && !a.end_date);
     const church = assign?.church_id ? churches.find(c => c.church_id === assign.church_id) : null;
     return `<tr>
-      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div>${statusBadge(p.status_code)}</div></div></td>
+      <td><div class="pastor-info">${pastorAvatar(p.pastor_name,p.image_url,'md')}<div><div class="pastor-name">${esc(p.pastor_name)}</div></div></div></td>
+      <td data-label="Status">${statusBadge(p.status_code)}</td>
       <td data-label="Current Church">${church ? esc(church.church_name) : '<span class="td-muted">Unassigned</span>'}</td>
       <td data-label="Since" class="td-muted">${assign ? formatDate(assign.start_date) : '—'}</td>
       <td data-label="Notes" class="td-muted">${esc(p.notes)||'—'}</td>
@@ -134,7 +137,7 @@ function reportInterim() {
   }).join('');
 
   return reportTable('Interim Pastors', `<span class="badge badge-interim">${interim.length} pastors</span>`,
-    '<th>Pastor</th><th>Current Church</th><th>Since</th><th>Notes</th>', rows);
+    '<th>Pastor</th><th>Status</th><th>Current Church</th><th>Since</th><th>Notes</th>', rows, 'interim');
 }
 
 // ── Vacant Churches ──────────────────────────────────────────
@@ -158,7 +161,7 @@ function reportVacant() {
   }).join('');
 
   return reportTable('Churches Without Active Pastor', `<span class="badge badge-suspended">${vacant.length} vacant</span>`,
-    '<th>Church</th><th>Location</th><th>Last Pastor</th><th>Vacated</th><th>Status</th>', rows);
+    '<th>Church</th><th>Location</th><th>Last Pastor</th><th>Vacated</th><th>Status</th>', rows, 'vacant');
 }
 
 // ── Zone Coverage ────────────────────────────────────────────
@@ -193,44 +196,90 @@ function reportZoneCounts() {
   }).join('');
 
   if (!rows) return emptyReport('No districts or zones configured yet.');
-  return reportTable('Zone Coverage', '', '<th>District</th><th>Zone</th><th>Churches</th><th>Assigned</th><th>Coverage</th>', rows);
+  return reportTable('Zone Coverage', '', '<th>District</th><th>Zone</th><th>Churches</th><th>Assigned</th><th>Coverage</th>', rows, 'zone-coverage');
 }
 
 // ── International ────────────────────────────────────────────
 function reportInternational() {
-  const intl = churchAssignments.filter(a => a.assignment_type_code === 'international');
-  if (intl.length === 0) return emptyReport('No international assignments recorded.');
+  const intlAssignedIds = new Set();
+  const intlAssignments = churchAssignments.filter(a => {
+    if (a.assignment_type_code === 'international') {
+      if (a.church_id) intlAssignedIds.add(a.church_id);
+      return true;
+    }
+    const c = churches.find(x => x.church_id === a.church_id);
+    if (c && c.is_international) {
+      intlAssignedIds.add(a.church_id);
+      return true;
+    }
+    return false;
+  });
 
-  const rows = intl.map(a => {
+  const unassignedIntlChurches = churches.filter(c => c.is_international && !intlAssignedIds.has(c.church_id));
+
+  if (intlAssignments.length === 0 && unassignedIntlChurches.length === 0) {
+    return emptyReport('No international records found.');
+  }
+
+  const rows = [];
+
+  intlAssignments.forEach(a => {
     const p = pastors.find(x => x.pastor_id === a.pastor_id);
     const c = a.church_id ? churches.find(x => x.church_id === a.church_id) : null;
-    return `<tr>
-      <td><div class="pastor-info">${pastorAvatar(p?.pastor_name||'?',p?.image_url,'md')}<div class="pastor-name">${esc(p?.pastor_name||'Unknown')}</div></div></td>
+    rows.push(`<tr>
+      <td><div class="pastor-info">${pastorAvatar(p?.pastor_name||'?',p?.image_url,'md')}<div><div class="pastor-name">${esc(p?.pastor_name||'Unknown')}</div></div></div></td>
+      <td data-label="Status">${a.end_date ? '<span class="badge" style="background:var(--border);color:var(--text-muted)">Ended</span>' : '<span class="badge badge-active">Active</span>'}</td>
       <td data-label="Church">${c ? esc(c.church_name) : '<span class="td-muted">—</span>'}</td>
       <td data-label="Period" class="td-muted">${formatDateRange(a.start_date, a.end_date)}</td>
-      <td data-label="Status">${a.end_date ? '<span class="badge" style="background:var(--border);color:var(--text-muted)">Ended</span>' : '<span class="badge badge-active">Active</span>'}</td>
       <td data-label="Notes" class="td-muted">${esc(a.notes)||'—'}</td>
-    </tr>`;
-  }).join('');
+    </tr>`);
+  });
 
-  return reportTable('International Assignments', `<span class="badge badge-international">${intl.length} records</span>`,
-    '<th>Pastor</th><th>Church</th><th>Period</th><th>Status</th><th>Notes</th>', rows);
+  unassignedIntlChurches.forEach(c => {
+    rows.push(`<tr>
+      <td><div class="pastor-info"><div class="img-placeholder" style="width:36px;height:36px;border-radius:6px">${icon('user-x','icon-sm')}</div><div><div class="pastor-name td-muted" style="font-style:italic">Vacant</div></div></div></td>
+      <td data-label="Status"><span class="badge badge-suspended">Unassigned</span></td>
+      <td data-label="Church">${esc(c.church_name)}</td>
+      <td data-label="Period" class="td-muted">—</td>
+      <td data-label="Notes" class="td-muted">${esc(c.notes)||'—'}</td>
+    </tr>`);
+  });
+
+  const total = intlAssignments.length + unassignedIntlChurches.length;
+
+  return reportTable('International Records', `<span class="badge badge-international">${total} records</span>`,
+    '<th>Pastor</th><th>Status</th><th>Church</th><th>Period</th><th>Notes</th>', rows.join(''), 'international');
 }
 
 // ── Pastor Timeline ──────────────────────────────────────────
 function reportTimeline() {
   const select = `
-    <div class="form-group" style="max-width:320px;margin-bottom:20px">
-      <label>${icon('user','icon-xs')} Select Pastor</label>
-      <select id="timeline-pastor-select" onchange="renderTimeline()">
-        <option value="">Choose a pastor…</option>
-        ${pastors.map(p => `<option value="${p.pastor_id}">${esc(p.pastor_name)} (${p.status_code})</option>`).join('')}
-      </select>
+    <div class="form-group" style="max-width:320px;margin-bottom:20px;display:flex;align-items:flex-end;gap:12px">
+      <div style="flex:1">
+        <label>${icon('user','icon-xs')} Select Pastor</label>
+        <select id="timeline-pastor-select" onchange="renderTimeline()">
+          <option value="">Choose a pastor…</option>
+          ${pastors.map(p => `<option value="${p.pastor_id}">${esc(p.pastor_name)} (${p.status_code})</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-outline" onclick="exportTimeline()">${icon('download')} Export</button>
     </div>
     <div id="timeline-result"></div>`;
 
   return `<div class="card">${select}</div>`;
 }
+
+window.exportTimeline = function() {
+  const pastorId = document.getElementById('timeline-pastor-select')?.value;
+  if (!pastorId) {
+    if (window.showToast) window.showToast('Select a pastor first to export timeline.', 'error');
+    else alert('Select a pastor first to export timeline.');
+    return;
+  }
+  if (window.downloadReportSheet) {
+    window.downloadReportSheet('timeline', pastorId);
+  }
+};
 
 window.renderTimeline = function() {
   const pastorId = +document.getElementById('timeline-pastor-select')?.value || null;
@@ -256,11 +305,13 @@ window.renderTimeline = function() {
 };
 
 // ── Helpers ──────────────────────────────────────────────────
-function reportTable(title, badge, headers, rows) {
+function reportTable(title, badge, headers, rows, exportType) {
+  const exportBtn = exportType ? `<button class="btn btn-sm btn-outline" style="margin-left:auto" onclick="window.downloadReportSheet && window.downloadReportSheet('${exportType}')">${icon('download', 'icon-xs')} Export</button>` : '';
   return `<div class="card" style="padding:0">
-    <div class="card-header" style="padding:16px 20px">
+    <div class="card-header" style="padding:16px 20px; display:flex; align-items:center;">
       <div class="card-title">${title}</div>
-      ${badge}
+      ${badge ? `<div style="margin-left:12px">${badge}</div>` : ''}
+      ${exportBtn}
     </div>
     <div class="table-wrapper" style="border:none;border-radius:0">
       <table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>

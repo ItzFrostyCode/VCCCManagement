@@ -98,7 +98,6 @@ function renderActiveTab() {
                 ${pastorAvatar(p?.pastor_name||'?', p?.image_url, 'sm')}
                 <div>
                   <div class="pastor-name">${esc(p?.pastor_name||'Unknown')}</div>
-                  ${p ? `<div>${statusBadge(p.status_code)}</div>` : ''}
                 </div>
               </div>
             </td>
@@ -154,16 +153,36 @@ function renderSuspendedTab() {
     return;
   }
 
-  container.innerHTML = `<div class="grid-list">
-    ${list.map(p => `<div class="card" style="display:flex;align-items:center;gap:16px;border-left:4px solid var(--danger)">
-      ${pastorAvatar(p.pastor_name, p.image_url, 'md')}
-      <div style="flex:1">
-        <div style="font-weight:700">${esc(p.pastor_name)}</div>
-        ${statusBadge(p.status_code)}
-        ${p.notes ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${icon('file-text','icon-xs')} ${esc(p.notes)}</div>` : ''}
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reinstate</button>
-    </div>`).join('')}
+  container.innerHTML = `<div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Pastor</th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(p => `<tr>
+          <td>
+            <div class="pastor-info">
+              ${pastorAvatar(p.pastor_name, p.image_url, 'sm')}
+              <div>
+                <div class="pastor-name">${esc(p.pastor_name)}</div>
+              </div>
+            </div>
+          </td>
+          <td data-label="Status">${statusBadge(p.status_code)}</td>
+          <td data-label="Notes" class="td-muted">${p.notes ? `${icon('file-text','icon-xs')} ${esc(p.notes)}` : '—'}</td>
+          <td>
+            <div class="td-actions">
+              <button class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reinstate</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
   </div>`;
 }
 
@@ -178,21 +197,42 @@ function renderInterimTab() {
     return;
   }
 
-  container.innerHTML = `<div class="grid-list">
-    ${list.map(p => {
-      const active = getActiveAssignment(p.pastor_id);
-      const c = active?.church_id ? churches.find(x => x.church_id === active.church_id) : null;
-      return `<div class="card" style="display:flex;align-items:center;gap:16px;border-left:4px solid var(--warning)">
-        ${pastorAvatar(p.pastor_name, p.image_url, 'md')}
-        <div style="flex:1">
-          <div style="font-weight:700">${esc(p.pastor_name)}</div>
-          ${statusBadge(p.status_code)}
-          ${c ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${icon('church','icon-xs')} ${esc(c.church_name)}</div>` : ''}
-          ${active ? `<div style="font-size:12px;color:var(--text-muted)">${icon('calendar','icon-xs')} Since ${formatDate(active.start_date)}</div>` : ''}
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reassign</button>
-      </div>`;
-    }).join('')}
+  container.innerHTML = `<div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Pastor</th>
+          <th>Status</th>
+          <th>Church</th>
+          <th>Since</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(p => {
+          const active = getActiveAssignment(p.pastor_id);
+          const c = active?.church_id ? churches.find(x => x.church_id === active.church_id) : null;
+          return `<tr>
+            <td>
+              <div class="pastor-info">
+                ${pastorAvatar(p.pastor_name, p.image_url, 'sm')}
+                <div>
+                  <div class="pastor-name">${esc(p.pastor_name)}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Status">${statusBadge(p.status_code)}</td>
+            <td data-label="Church" class="td-muted">${c ? `${icon('church','icon-xs')} ${esc(c.church_name)}` : '—'}</td>
+            <td data-label="Since" class="td-muted">${active ? `${icon('calendar','icon-xs')} ${formatDate(active.start_date)}` : '—'}</td>
+            <td>
+              <div class="td-actions">
+                <button class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reassign</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
   </div>`;
 }
 

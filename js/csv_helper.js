@@ -10,7 +10,7 @@ import {
 // ── Columns Configuration ────────────────────────────────────
 
 const COLS = {
-  DISTRICT: ['district_id', 'district_name', 'leader_pastor_id', 'assistant_leader_pastor_id', 'notes', 'created_at'],
+  DISTRICT: ['district_id', 'district_name', 'leader_pastor_id', 'assistant_leader_pastor_id', 'color', 'notes', 'created_at'],
   ZONE:     ['zone_id', 'district_id', 'zone_name', 'notes', 'created_at'],
   CHURCH:   ['church_id', 'church_name', 'church_address', 'district_id', 'zone_id', 'is_international', 'notes', 'created_at'],
   PASTOR:   ['pastor_id', 'pastor_name', 'wife_name', 'contact_number', 'image_url', 'wife_image_url', 'birth_date', 'wife_birth_date', 'pastoring_start_date', 'status_code', 'notes', 'created_at'],
@@ -150,18 +150,74 @@ export function parseDatabaseFromCSV(csvText) {
 
 // ── Custom Export Generation (Spreadsheets) ──────────────────
 
-export function exportPastorsToCSV() {
-  const customCols = [
-    'pastor_id', 'pastor_name', 'wife_name', 'contact_number', 'birth_date', 
-    'wife_birth_date', 'pastoring_start_date', 'status_code', 'notes'
-  ];
-  const rows = [];
-  rows.push(customCols.join(',')); // Header
-  pastors.forEach(p => {
-    rows.push(customCols.map(k => escapeCSV(p[k])).join(','));
-  });
-  return rows.join('\n');
+export function exportPastorsToHTML() {
+  function imgCell(dataUrl) {
+    if (dataUrl && dataUrl.startsWith('data:')) {
+      return `<img src="${dataUrl}" style="width:90px;height:90px;object-fit:cover;border-radius:6px;display:block;margin:auto;">`;
+    }
+    return `<span style="color:#aaa;font-size:12px;">No image</span>`;
+  }
+
+  const rows = pastors.map((p, i) => `
+    <tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8f9fa'}">
+      <td style="text-align:center;color:#888;font-size:12px;">${p.pastor_id}</td>
+      <td style="font-weight:600;font-size:14px;">${p.pastor_name || '—'}</td>
+      <td>${p.birth_date || '—'}</td>
+      <td>${p.pastoring_start_date || '—'}</td>
+      <td>${p.wife_name || '—'}</td>
+      <td>${p.wife_birth_date || '—'}</td>
+      <td>${p.contact_number || '—'}</td>
+      <td style="text-align:center;padding:6px;">${imgCell(p.image_url)}</td>
+      <td style="text-align:center;padding:6px;">${imgCell(p.wife_image_url)}</td>
+    </tr>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pastors Directory — VCCC</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #222; background: #f0f2f5; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+  .count { display:inline-block; background:#1a1a2e; color:#fff; font-size:12px; padding:2px 8px; border-radius:12px; margin-left:8px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  thead tr { background: #1a1a2e; color: #fff; }
+  th { padding: 12px 10px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #aaa; }
+  @media print { body { background: #fff; padding: 0; } table { box-shadow: none; } }
+</style>
+</head>
+<body>
+  <h1>Pastors Directory <span class="count">${pastors.length} Pastors</span></h1>
+  <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' })}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Pastor Name</th>
+        <th>Birthdate</th>
+        <th>Start of Pastoring</th>
+        <th>Wife Name</th>
+        <th>Wife Birthdate</th>
+        <th>Contact Number</th>
+        <th style="width:110px;text-align:center;">Pastor Photo</th>
+        <th style="width:110px;text-align:center;">Wife Photo</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">VCCC Church Management System &copy; 2025–2026 · Created by Joshua Wayman A. Arabejo</div>
+</body>
+</html>`;
 }
+
+
+
+
 
 export function exportChurchesToCSV() {
   const header = ['church_id', 'church_name', 'church_address', 'district', 'zone', 'is_international', 'notes'];
@@ -219,25 +275,20 @@ export function exportDistrictsToCSV() {
 }
 
 export function exportAssignmentsToCSV() {
-  const header = ['assignment_id', 'pastor_name', 'church_name', 'district_name', 'zone_name', 'assignment_type', 'start_date', 'end_date', 'notes'];
+  const header = ['Pastor', 'Church', 'District', 'Type', 'Since'];
   const rows = [];
   rows.push(header.join(',')); // Header
   churchAssignments.forEach(a => {
     const p = pastors.find(x => x.pastor_id === a.pastor_id);
     const c = churches.find(x => x.church_id === a.church_id);
-    const d = c ? districts.find(x => x.district_id === c.district_id) : null;
-    const z = c ? zones.find(x => x.zone_id === c.zone_id) : null;
+    const d = c && c.district_id ? districts.find(x => x.district_id === c.district_id) : null;
     
     const values = [
-      a.assignment_id,
       p ? p.pastor_name : 'Unknown Pastor',
       c ? c.church_name : 'No Church',
       d ? d.district_name : 'No District',
-      z ? z.zone_name : 'No Zone',
       a.assignment_type_code,
-      a.start_date || '',
-      a.end_date || '',
-      a.notes || ''
+      a.start_date || ''
     ];
     rows.push(values.map(v => escapeCSV(v)).join(','));
   });

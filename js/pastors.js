@@ -4,8 +4,9 @@
 
 import {
   pastors, churchAssignments, districts, churches,
-  nextId, getActiveAssignment, saveAll
+  nextId, getActiveAssignment, saveAll, counters
 } from './data.js';
+
 import {
   icon, showToast, statusBadge, assignmentBadge, formatDate, formatDateRange,
   esc, pastorAvatar, statusOptions, readImageFile, emptyState, confirmDelete, debounce
@@ -128,8 +129,7 @@ function renderTableView(list) {
             <td data-label="Status">${statusBadge(p.status_code)}</td>
             <td data-label="Current Assignment">
               ${active
-                ? `<div>${assignmentBadge(active.assignment_type_code)}</div>
-                   <div class="td-muted" style="margin-top:4px;font-size:12px">${church ? esc(church.church_name) : 'No church'}</div>`
+                ? `<div style="font-size:14px">${church ? esc(church.church_name) : 'No church'}</div>`
                 : '<span class="td-muted">—</span>'}
             </td>
             <td>
@@ -167,7 +167,7 @@ function buildPastorForm(p = {}) {
         <label>${icon('calendar','icon-xs')} Pastoring Start Date *</label>
         <input type="date" id="f-pastoring-start" value="${p.pastoring_start_date||''}">
       </div>
-      <div class="form-group">
+      <div class="form-group span-2">
         <label>${icon('activity','icon-xs')} Status</label>
         <select id="f-status">
           ${statusOptions(p.status_code || 'undeployed')}
@@ -175,7 +175,7 @@ function buildPastorForm(p = {}) {
       </div>
       <div class="form-group span-2">
         <label>${icon('file-text','icon-xs')} Notes</label>
-        <textarea id="f-notes" placeholder="Optional notes">${esc(p.notes||'')}</textarea>
+        <textarea id="f-notes" placeholder="Optional Notes (ex. Pastor Background, Pastor Education,Previous Work, Pastor Testimony etc...)">${esc(p.notes||'')}</textarea>
       </div>
     </div>
 
@@ -288,7 +288,7 @@ window.savePastor = async function(id = null) {
   const wifeImgUrl   = wifeFile   ? await readImageFile(wifeFile)   : null;
   const today        = new Date().toISOString().split('T')[0];
 
-  if (id) {
+  if (id !== null) {
     const p = pastors.find(x => x.pastor_id === id);
     if (!p) return;
     p.pastor_name        = name;
@@ -405,12 +405,20 @@ window.deletePastor = function(id) {
       const i = churchAssignments.findIndex(a => a.assignment_id === aid);
       if (i > -1) churchAssignments.splice(i, 1);
     });
-    showToast(`${p.pastor_name} deleted.`, 'info');
+
+    // If no pastors remain at all, reset the ID counter so next pastor starts from 0
+    if (pastors.length === 0) {
+      counters.pastor = 0;
+      if (churchAssignments.length === 0) counters.assignment = 0;
+    }
+
     saveAll();
+    showToast(`${p.pastor_name} deleted.`, 'info');
     updateNavCounts();
     renderPastors();
   });
 };
+
 
 window.filterPastors = debounce(renderPastorsList, 200);
 

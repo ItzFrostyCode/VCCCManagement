@@ -72,7 +72,7 @@ const _saved = loadFromStorage();
 // directly into them, then call saveAll() to persist.
 
 export const districts        = _saved?.districts        || [];
-// { district_id, district_name, leader_pastor_id, assistant_leader_pastor_id, notes, created_at }
+// { district_id, district_name, leader_pastor_id, assistant_leader_pastor_id, color, notes, created_at }
 
 export const zones            = _saved?.zones            || [];
 // { zone_id, district_id, zone_name, notes, created_at }
@@ -104,7 +104,7 @@ export const counters = _saved?.counters || {
 };
 
 export function nextId(key) {
-  const id = counters[key]++;
+  const id = ++counters[key]; // pre-increment: counter 0→1, so first ID = 1
   saveAll();
   return id;
 }
@@ -136,7 +136,6 @@ export function saveAll() {
  * Useful for a "Reset / Clear All Data" feature.
  */
 export function clearAllData() {
-  localStorage.removeItem(STORAGE_KEY);
   districts.length        = 0;
   zones.length            = 0;
   churches.length         = 0;
@@ -149,7 +148,10 @@ export function clearAllData() {
   counters.pastor     = 0;
   counters.assignment = 0;
   counters.event      = 0;
+  // Persist the reset so IDs start from 0 after a page reload
+  saveAll();
 }
+
 
 
 /**
@@ -255,12 +257,13 @@ export function mergeData(newData) {
   }
   
   // Recalculate counters based on max IDs
-  counters.district = districts.reduce((max, d) => Math.max(max, d.district_id || 0), 0) + 1;
-  counters.zone = zones.reduce((max, z) => Math.max(max, z.zone_id || 0), 0) + 1;
-  counters.church = churches.reduce((max, c) => Math.max(max, c.church_id || 0), 0) + 1;
-  counters.pastor = pastors.reduce((max, p) => Math.max(max, p.pastor_id || 0), 0) + 1;
-  counters.assignment = churchAssignments.reduce((max, a) => Math.max(max, a.assignment_id || 0), 0) + 1;
-  counters.event = pastorEvents.reduce((max, e) => Math.max(max, e.event_id || 0), 0) + 1;
+  // Set counters to max existing ID so next ++counter produces max+1
+  counters.district   = districts.reduce((max, d) => Math.max(max, d.district_id || 0), 0);
+  counters.zone       = zones.reduce((max, z) => Math.max(max, z.zone_id || 0), 0);
+  counters.church     = churches.reduce((max, c) => Math.max(max, c.church_id || 0), 0);
+  counters.pastor     = pastors.reduce((max, p) => Math.max(max, p.pastor_id || 0), 0);
+  counters.assignment = churchAssignments.reduce((max, a) => Math.max(max, a.assignment_id || 0), 0);
+  counters.event      = pastorEvents.reduce((max, e) => Math.max(max, e.event_id || 0), 0);
 
   saveAll();
 }

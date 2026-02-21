@@ -96,7 +96,9 @@ function renderChurchCard(c) {
   const zone = c.zone_id ? zones.find(z => z.zone_id === c.zone_id) : null;
   const district = c.district_id ? districts.find(d => d.district_id === c.district_id) : null;
 
-  return `<div class="card church-card">
+  const intlStyle = c.is_international ? 'border: 1px solid var(--primary);' : '';
+
+  return `<div class="card church-card" style="${intlStyle}">
     <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
       <div>
         <div style="font-weight:700;font-size:16px">${esc(c.church_name)}</div>

@@ -189,3 +189,22 @@ export function emptyState(title, subtitle, actionLabel, actionFn) {
 export function confirmDelete(name, onConfirm) {
   if (confirm(`Delete "${name}"? This cannot be undone.`)) onConfirm();
 }
+
+// ── Color Helpers ────────────────────────────────────────────
+
+export function hexToRgba(hex, alpha = 1) {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/i.test(hex)) return `rgba(79, 70, 229, ${alpha})`; // fallback primary color
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+  
+  // Clamp brightness for light mode visibility (prevent pure white)
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (lum > 220) {
+    r = Math.max(0, r - 40);
+    g = Math.max(0, g - 40);
+    b = Math.max(0, b - 40);
+  }
+  
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}

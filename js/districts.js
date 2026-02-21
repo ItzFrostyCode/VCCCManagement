@@ -9,7 +9,7 @@ import {
 } from './data.js';
 import {
   icon, showToast, esc, pastorAvatar, statusBadge, assignmentBadge,
-  emptyState, confirmDelete, debounce
+  emptyState, confirmDelete, debounce, hexToRgba
 } from './utils.js';
 import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 
@@ -19,7 +19,13 @@ const TODAY = new Date().toISOString().split('T')[0];
 export function renderDistricts() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = `<button class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} Add District</button>`;
+  
+  if (actions) {
+    actions.innerHTML = `
+      <button class="btn btn-secondary" onclick="openDistrictInfoExportModal()">${icon('download')} Export Info</button>
+      <button class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} Add District</button>
+    `;
+  }
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar">
@@ -78,9 +84,9 @@ function renderDistrictCard(district) {
   const leaderObj    = district.leader_pastor_id ? pastors.find(p => p.pastor_id === district.leader_pastor_id) : null;
   const assistantObj = district.assistant_leader_pastor_id ? pastors.find(p => p.pastor_id === district.assistant_leader_pastor_id) : null;
 
-  return `<div class="card" id="district-card-${district.district_id}" style="margin-bottom:16px; transition:all 0.2s">
+  return `<div class="card" id="district-card-${district.district_id}" style="margin-bottom:16px; padding:0; overflow:hidden; transition:all 0.2s">
     <!-- Header Row (Always Visible) -->
-    <div class="district-header-row" onclick="toggleDistrictCard(${district.district_id})">
+    <div class="district-header-row" onclick="toggleDistrictCard(${district.district_id})" style="background: ${hexToRgba(district.color || '#4f46e5', 0.1)}; border-bottom: 1px solid ${hexToRgba(district.color || '#4f46e5', 0.15)}; padding: 12px 16px; display:flex; align-items:center;">
       <div style="flex:1">
         <div class="district-name" style="font-size:16px;font-weight:700;transition:color 0.2s">${esc(district.district_name)}</div>
         <div style="font-size:12px;color:var(--text-muted)">${distZones.length} zones · ${totalChurches} churches</div>
@@ -92,7 +98,7 @@ function renderDistrictCard(district) {
     </div>
 
     <!-- Body Content (Collapsible) -->
-    <div class="card-body-content" id="district-body-${district.district_id}" style="margin-top:16px; display:none">
+    <div class="card-body-content" id="district-body-${district.district_id}" style="padding: 16px; display:none">
 
       <!-- Edit Mode Actions -->
       <div class="edit-actions" style="margin-bottom:16px; gap:8px; border-bottom:1px solid var(--border); padding-bottom:16px">
@@ -141,7 +147,7 @@ function renderDistrictCard(district) {
             ${icon('alert-circle','icon-xs')} Unzoned Churches
           </div>
           <div class="unzoned-pool" data-district="${district.district_id}">
-            ${unzonedChurches.map(c => renderChurchDraggable(c)).join('')}
+            ${unzonedChurches.map(c => renderChurchDraggable(c, district.color)).join('')}
           </div>
         </div>
       ` : ''}
@@ -182,10 +188,12 @@ window.toggleDistrictEditMode = function(id) {
   }
 };
 
-function renderChurchDraggable(c) {
+function renderChurchDraggable(c, dColor) {
   const activeAssign = churchAssignments.find(a => a.church_id === c.church_id && !a.end_date);
   const pastor = activeAssign ? pastors.find(p => p.pastor_id === activeAssign.pastor_id) : null;
-  return `<div class="church-row draggable-church" draggable="true" data-church-id="${c.church_id}" style="cursor:grab">
+  const bg = dColor ? hexToRgba(dColor, 0.05) : '';
+  const border = dColor ? `border-left: 3px solid ${hexToRgba(dColor, 0.5)};` : '';
+  return `<div class="church-row draggable-church" draggable="true" data-church-id="${c.church_id}" style="cursor:grab; background:${bg}; ${border}">
     <div class="church-row-info">
       <div class="church-row-icon">${icon('grip-vertical','icon-xs')}</div>
       <div>
@@ -193,13 +201,21 @@ function renderChurchDraggable(c) {
         ${c.church_address ? `<div class="church-row-addr">${icon('map-pin','icon-xs')} ${esc(c.church_address)}</div>` : ''}
       </div>
     </div>
-    <div class="church-row-pastor">
+    <div class="church-row-pastor" style="flex:2; display:flex; justify-content:flex-start">
       ${pastor
-        ? `<div class="pastor-info">${pastorAvatar(pastor.pastor_name, pastor.image_url, 'sm')}<div style="font-size:13px;font-weight:600">${esc(pastor.pastor_name)}</div></div>`
-        : `<span class="badge badge-suspended" style="font-size:10px">${icon('alert-triangle','icon-xs')} Vacant</span>`}
+        ? `<div class="pastor-info">
+            ${pastorAvatar(pastor.pastor_name, pastor.image_url, 'sm')}
+            <div>
+              <div style="font-size:13px;font-weight:600">${esc(pastor.pastor_name)}</div>
+            </div>
+           </div>`
+        : `<span class="badge badge-suspended" style="font-size:11px; font-weight:600; padding: 4px 10px; border-radius: 12px; background: var(--danger-light); color: var(--danger)">${icon('alert-triangle','icon-xs')} Vacant</span>`}
+    </div>
+    <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:16px">
+      ${pastor && activeAssign ? assignmentBadge(activeAssign.assignment_type_code) : ''}
     </div>
     <div class="td-actions">
-      ${!pastor ? `<button class="btn btn-sm btn-ghost" style="font-size:11px" onclick="openAssignPastorToChurch(${c.church_id})">${icon('user-plus')} Assign</button>` : ''}
+      ${!pastor ? `<button class="btn btn-sm btn-ghost" style="font-size:11px" onclick="openAssignPastorToChurch(${c.church_id})">${icon('user-plus')} Assign</button>` : `<button class="btn btn-icon-sm btn-ghost" onclick="viewPastor(${pastor.pastor_id})">${icon('eye')}</button>`}
       <button class="btn btn-icon-sm btn-ghost" onclick="openEditChurchInDistrict(${c.church_id})">${icon('pencil')}</button>
       <button class="btn btn-icon-sm btn-ghost" style="color:var(--danger)" onclick="deleteChurchFromDistrict(${c.church_id})">${icon('trash-2')}</button>
     </div>
@@ -213,8 +229,11 @@ function renderZoneCard(z) {
   const percent = total > 0 ? (filled / total) * 100 : 0;
   const vacantCount = total - filled;
 
+  const d = districts.find(x => x.district_id === z.district_id);
+  const dColor = d?.color || '#4f46e5';
+
   return `<div class="zone-card-wrap">
-    <div class="zone-card" onclick="toggleCollapse('zone-${z.zone_id}')" style="align-items:flex-start">
+    <div class="zone-card" onclick="toggleCollapse('zone-${z.zone_id}')" style="align-items:flex-start; background: ${hexToRgba(dColor, 0.08)}; border: 1px solid ${hexToRgba(dColor, 0.2)}">
       <div style="flex:1;min-width:0">
         <div class="zone-title" style="margin-bottom:6px">
           ${icon('layers','icon-sm')}
@@ -264,10 +283,12 @@ function renderChurchRow(c) {
             ${pastorAvatar(pastor.pastor_name, pastor.image_url, 'sm')}
             <div>
               <div style="font-size:13px;font-weight:600">${esc(pastor.pastor_name)}</div>
-              <div style="display:flex;gap:4px;margin-top:2px">${statusBadge(pastor.status_code)} ${assignmentBadge(activeAssign.assignment_type_code)}</div>
             </div>
            </div>`
         : `<span class="badge badge-suspended" style="font-size:10px">${icon('alert-triangle','icon-xs')} Vacant</span>`}
+    </div>
+    <div style="display:flex;align-items:center;margin-right:8px">
+      ${pastor && activeAssign ? assignmentBadge(activeAssign.assignment_type_code) : ''}
     </div>
     <div class="td-actions">
       ${!pastor ? `<button class="btn btn-sm btn-ghost" style="font-size:11px" onclick="openAssignPastorToChurch(${c.church_id})">${icon('user-plus')} Assign</button>` : `<button class="btn btn-icon-sm btn-ghost" onclick="viewPastor(${pastor.pastor_id})">${icon('eye')}</button>`}
@@ -378,6 +399,13 @@ function buildDistrictForm(d = {}) {
       <input type="text" id="f-dist-name" placeholder="e.g. District 1, Palawan" value="${esc(d.district_name||'')}">
     </div>
     <div class="form-group">
+      <label>${icon('palette','icon-xs')} Theme Color</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="color" id="f-dist-color" value="${esc(d.color||'#4f46e5')}" style="width:38px;height:38px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none">
+        <span style="font-size:12px;color:var(--text-muted)">Color cascades to zones and churches</span>
+      </div>
+    </div>
+    <div class="form-group">
       <label>${icon('user','icon-xs')} District Leader (Pastor) *</label>
       <select id="f-dist-leader">${pastorOpts}</select>
     </div>
@@ -394,6 +422,7 @@ function buildDistrictForm(d = {}) {
 
 window.saveDistrict = function(id = null) {
   const name   = document.getElementById('f-dist-name')?.value.trim();
+  const color  = document.getElementById('f-dist-color')?.value || '#4f46e5';
   const leader = +document.getElementById('f-dist-leader')?.value || null;
   const asst   = +document.getElementById('f-dist-assistant')?.value || null;
   const notes  = document.getElementById('f-dist-notes')?.value.trim();
@@ -406,12 +435,13 @@ window.saveDistrict = function(id = null) {
     const d = districts.find(x => x.district_id === id);
     if (!d) return;
     d.district_name = name;
+    d.color = color;
     d.leader_pastor_id = leader;
     d.assistant_leader_pastor_id = asst;
     d.notes = notes || null;
     showToast('District updated.', 'success');
   } else {
-    districts.push({ district_id: nextId('district'), district_name: name, leader_pastor_id: leader, assistant_leader_pastor_id: asst, notes: notes||null, created_at: TODAY });
+    districts.push({ district_id: nextId('district'), district_name: name, color, leader_pastor_id: leader, assistant_leader_pastor_id: asst, notes: notes||null, created_at: TODAY });
     showToast('District added.', 'success');
   }
   saveAll();
