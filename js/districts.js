@@ -410,7 +410,7 @@ function buildDistrictForm(d = {}) {
       <select id="f-dist-leader">${pastorOpts}</select>
     </div>
     <div class="form-group">
-      <label>${icon('user-plus','icon-xs')} District Assistant Leader *</label>
+      <label>${icon('user-plus','icon-xs')} District Assistant Leader</label>
       <select id="f-dist-assistant">${asstOpts}</select>
     </div>
     <div class="form-group">
@@ -428,8 +428,7 @@ window.saveDistrict = function(id = null) {
   const notes  = document.getElementById('f-dist-notes')?.value.trim();
   if (!name) { showToast('District name is required.', 'error'); return; }
   if (!leader) { showToast('District Leader is required.', 'error'); return; }
-  if (!asst) { showToast('District Assistant Leader is required.', 'error'); return; }
-  if (leader && leader === asst) { showToast('Leader and Assistant cannot be the same person.', 'error'); return; }
+  if (leader && asst && leader === asst) { showToast('Leader and Assistant cannot be the same person.', 'error'); return; }
 
   if (id) {
     const d = districts.find(x => x.district_id === id);
