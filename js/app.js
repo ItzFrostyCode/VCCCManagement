@@ -1,6 +1,10 @@
 
 import { pastors, churches, districts, zones, churchAssignments, clearAllData, replaceData } from './data.js';
-import { exportDatabaseToCSV, parseDatabaseFromCSV } from './csv_helper.js';
+import { 
+  exportDatabaseToCSV, parseDatabaseFromCSV, 
+  exportPastorsToCSV, exportChurchesToCSV, 
+  exportDistrictsToCSV, exportAssignmentsToCSV 
+} from './csv_helper.js';
 import { icon, showToast, assignmentBadge, formatDate, esc, pastorAvatar } from './utils.js';
 import { renderPastors } from './pastors.js';
 import { renderChurches } from './churches.js';
@@ -314,7 +318,7 @@ function renderDataPage() {
                 <div style="flex-grow:1;margin-bottom:24px">
                   <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">Import Data</h3>
                   <p style="font-size:14px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">Restore from a Full Database Backup CSV file.</p>
-                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5"><strong>New records will be merged</strong> with existing ones without overwriting them.</p>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Existing records with the <strong>same name or ID will be updated</strong> with the new data.</p>
                 </div>
                 <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleFileImport(this)">
                 <button class="btn btn-secondary w-full" style="justify-content:center;padding:12px;font-size:14px;font-weight:600;background:var(--bg-base)" onclick="document.getElementById('csv-upload').click()">${icon('upload')} Select Backup File</button>
@@ -326,6 +330,74 @@ function renderDataPage() {
     </div>
   `;
 }
+
+// ── Sectional CSV Export/Import ──────────────────────────────
+
+window.exportSectionCSV = function(section) {
+  let csv = '';
+  let filename = '';
+  const now = new Date().toISOString().split('T')[0];
+
+  switch(section) {
+    case 'pastors':
+      csv = exportPastorsToCSV();
+      filename = `pastors_${now}.csv`;
+      break;
+    case 'churches':
+      csv = exportChurchesToCSV();
+      filename = `churches_${now}.csv`;
+      break;
+    case 'districts':
+      csv = exportDistrictsToCSV();
+      filename = `districts_${now}.csv`;
+      break;
+    case 'assignments':
+      csv = exportAssignmentsToCSV();
+      filename = `assignments_${now}.csv`;
+      break;
+  }
+
+  if (csv) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+};
+
+window.triggerImportCSV = function(section) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (file) handleSectionFileImport(file, section);
+  };
+  input.click();
+};
+
+async function handleSectionFileImport(file, section) {
+  try {
+    const text = await file.text();
+    const newData = parseDatabaseFromCSV(text);
+    const { mergeData } = await import('./data.js');
+    const stats = mergeData(newData);
+    
+    showToast(`Data imported. New: ${stats.added}, Updated: ${stats.replaced}`, 'success');
+    updateNavCounts();
+    navigate(section);
+  } catch (err) {
+    console.error('Import failed:', err);
+    showToast('Import failed. Please check the file format.', 'error');
+  }
+}
+
 window.downloadCSV = function() {
   const csv = exportDatabaseToCSV();
   const blob = new Blob([csv], { type: 'text/csv' });

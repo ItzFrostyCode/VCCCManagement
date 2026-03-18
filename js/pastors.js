@@ -19,7 +19,11 @@ let currentView = 'all'; // all, active, undeployed, suspended, interim
 export function renderPastors() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = `<button class="btn btn-primary" onclick="openAddPastorModal()">${icon('user-plus')} Add Pastor</button>`;
+  actions.innerHTML = `
+    <button class="btn btn-secondary" onclick="exportSectionCSV('pastors')">${icon('download')} <span>Export</span></button>
+    <button class="btn btn-secondary" onclick="triggerImportCSV('pastors')">${icon('upload')} <span>Import</span></button>
+    <button class="btn btn-primary" onclick="openAddPastorModal()">${icon('user-plus')} <span>Add Pastor</span></button>
+  `;
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">

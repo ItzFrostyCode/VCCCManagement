@@ -214,16 +214,17 @@ export function mergeData(newData) {
   if (newData.districts) {
     newData.districts.forEach(nd => {
       const idx = districts.findIndex(ed => (nd.district_id && ed.district_id === nd.district_id));
-      const nameExists = districts.some(ed => ed.district_name.toLowerCase() === nd.district_name.toLowerCase());
+      const nameExistsIdx = districts.findIndex(ed => ed.district_name.toLowerCase() === nd.district_name.toLowerCase());
 
       if (idx > -1) {
         districts[idx] = { ...districts[idx], ...nd };
         stats.replaced++;
-      } else if (!nameExists) {
+      } else if (nameExistsIdx > -1) {
+        districts[nameExistsIdx] = { ...districts[nameExistsIdx], ...nd };
+        stats.replaced++;
+      } else {
         districts.push(nd);
         stats.added++;
-      } else {
-        stats.skipped++;
       }
     });
   }
@@ -231,16 +232,17 @@ export function mergeData(newData) {
   if (newData.zones) {
     newData.zones.forEach(nz => {
       const idx = zones.findIndex(ez => (nz.zone_id && ez.zone_id === nz.zone_id));
-      const nameExists = zones.some(ez => ez.zone_name.toLowerCase() === nz.zone_name.toLowerCase() && ez.district_id === nz.district_id);
+      const nameExistsIdx = zones.findIndex(ez => ez.zone_name.toLowerCase() === nz.zone_name.toLowerCase() && ez.district_id === nz.district_id);
 
       if (idx > -1) {
         zones[idx] = { ...zones[idx], ...nz };
         stats.replaced++;
-      } else if (!nameExists) {
+      } else if (nameExistsIdx > -1) {
+        zones[nameExistsIdx] = { ...zones[nameExistsIdx], ...nz };
+        stats.replaced++;
+      } else {
         zones.push(nz);
         stats.added++;
-      } else {
-        stats.skipped++;
       }
     });
   }
@@ -248,16 +250,17 @@ export function mergeData(newData) {
   if (newData.churches) {
     newData.churches.forEach(nc => {
       const idx = churches.findIndex(ec => (nc.church_id && ec.church_id === nc.church_id));
-      const nameExists = churches.some(ec => ec.church_name.toLowerCase() === nc.church_name.toLowerCase());
+      const nameExistsIdx = churches.findIndex(ec => ec.church_name.toLowerCase() === nc.church_name.toLowerCase());
 
       if (idx > -1) {
         churches[idx] = { ...churches[idx], ...nc };
         stats.replaced++;
-      } else if (!nameExists) {
+      } else if (nameExistsIdx > -1) {
+        churches[nameExistsIdx] = { ...churches[nameExistsIdx], ...nc };
+        stats.replaced++;
+      } else {
         churches.push(nc);
         stats.added++;
-      } else {
-        stats.skipped++;
       }
     });
   }
@@ -265,16 +268,17 @@ export function mergeData(newData) {
   if (newData.pastors) {
     newData.pastors.forEach(np => {
       const idx = pastors.findIndex(ep => (np.pastor_id && ep.pastor_id === np.pastor_id));
-      const nameExists = pastors.some(ep => ep.pastor_name.toLowerCase() === np.pastor_name.toLowerCase());
+      const nameExistsIdx = pastors.findIndex(ep => ep.pastor_name.toLowerCase() === np.pastor_name.toLowerCase());
 
       if (idx > -1) {
         pastors[idx] = { ...pastors[idx], ...np };
         stats.replaced++;
-      } else if (!nameExists) {
+      } else if (nameExistsIdx > -1) {
+        pastors[nameExistsIdx] = { ...pastors[nameExistsIdx], ...np };
+        stats.replaced++;
+      } else {
         pastors.push(np);
         stats.added++;
-      } else {
-        stats.skipped++;
       }
     });
   }
@@ -282,18 +286,19 @@ export function mergeData(newData) {
   if (newData.churchAssignments) {
     newData.churchAssignments.forEach(na => {
       const idx = churchAssignments.findIndex(ea => (na.assignment_id && ea.assignment_id === na.assignment_id));
-      const exists = churchAssignments.some(ea => 
+      const existsIdx = churchAssignments.findIndex(ea => 
         (ea.pastor_id === na.pastor_id && ea.church_id === na.church_id && ea.start_date === na.start_date)
       );
 
       if (idx > -1) {
         churchAssignments[idx] = { ...churchAssignments[idx], ...na };
         stats.replaced++;
-      } else if (!exists) {
+      } else if (existsIdx > -1) {
+        churchAssignments[existsIdx] = { ...churchAssignments[existsIdx], ...na };
+        stats.replaced++;
+      } else {
         churchAssignments.push(na);
         stats.added++;
-      } else {
-        stats.skipped++;
       }
     });
   }

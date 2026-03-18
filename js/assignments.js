@@ -23,7 +23,11 @@ window.setAssignmentAfterSave = function(cb) { _afterSaveCallback = cb; };
 export function renderAssignments() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = `<button class="btn btn-primary" onclick="openAddAssignmentModal()">${icon('plus')} New Assignment</button>`;
+  actions.innerHTML = `
+    <button class="btn btn-secondary" onclick="exportSectionCSV('assignments')">${icon('download')} <span>Export</span></button>
+    <button class="btn btn-secondary" onclick="triggerImportCSV('assignments')">${icon('upload')} <span>Import</span></button>
+    <button class="btn btn-primary" onclick="openAddAssignmentModal()">${icon('plus')} <span>New Assignment</span></button>
+  `;
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">

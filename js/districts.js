@@ -19,11 +19,11 @@ const TODAY = new Date().toISOString().split('T')[0];
 export function renderDistricts() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  
   if (actions) {
     actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="openDistrictInfoExportModal()">${icon('download')} Export Info</button>
-      <button class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} Add District</button>
+      <button class="btn btn-secondary" onclick="exportSectionCSV('districts')">${icon('download')} <span>Export</span></button>
+      <button class="btn btn-secondary" onclick="triggerImportCSV('districts')">${icon('upload')} <span>Import</span></button>
+      <button class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} <span>Add District</span></button>
     `;
   }
 

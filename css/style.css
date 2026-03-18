@@ -617,7 +617,8 @@ textarea { resize:vertical; min-height:80px; }
 @media(max-width:768px) {
   /* ── Core Layout ─────────────────────────────────────────── */
   body, html { background: var(--bg-base); }
-  #menu-toggle, .topbar-actions { display: none !important; }
+  #menu-toggle { display: inline-flex !important; }
+  .topbar-actions { display: flex !important; gap: 4px; }
   .topbar-subtitle { display: none; }
 
   .topbar {
@@ -798,6 +799,12 @@ textarea { resize:vertical; min-height:80px; }
   .edit-actions .btn { min-height: 36px; }
 
   /* ── Zone Card Actions ────────────────────────────────────── */
+}
+
+@media(max-width: 640px) {
+  .topbar-actions .btn span { display: none; }
+  .topbar-actions .btn { padding: 8px 10px; }
+}
   /* Zone card: allow action column to shrink */
   .zone-card { align-items: flex-start; flex-wrap: wrap; }
   .zone-card .td-actions { flex-wrap: wrap; gap: 4px; }
@@ -910,7 +917,7 @@ textarea { resize:vertical; min-height:80px; }
   /* ── Toast ───────────────────────────────────────────────── */
   .toast-container { left:12px; right:12px; bottom:76px; width:auto; gap:8px; }
   .toast { min-width:100%; margin:0; }
-}
+
 
 /* ── Small screens (≤320px — older iPhones, narrow Androids) ── */
 @media(max-width:320px) {

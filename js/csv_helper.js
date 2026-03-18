@@ -58,6 +58,10 @@ export function exportDatabaseToCSV() {
   return rows.join('\n');
 }
 
+function normalizeHeader(h) {
+  return h.trim().toLowerCase().replace(/[\s_]/g, '');
+}
+
 // ── CSV Parsing ──────────────────────────────────────────────
 
 function parseCSVLine(text) {
@@ -171,27 +175,32 @@ export function parseDatabaseFromCSV(csvText) {
   } else {
     // Attempt to handle custom sheets (Assignments, Churches, etc.)
     const headers = parseCSVLine(firstLine).map(h => h.trim());
+    const normHeaders = headers.map(h => normalizeHeader(h));
     
     // 1. Assignments Sheet: Pastor, Church, District, Type, Since
-    if (headers.includes('Pastor') && headers.includes('Church') && headers.includes('Type')) {
+    if (normHeaders.includes('pastor') && normHeaders.includes('church') && normHeaders.includes('type')) {
       lines.slice(1).forEach(line => {
         if (!line.trim()) return;
         const vals = parseCSVLine(line);
         const row = {};
-        headers.forEach((h, i) => row[h] = vals[i]);
+        normHeaders.forEach((h, i) => row[h] = vals[i]);
 
         // Map names back to IDs
-        const p = pastors.find(x => x.pastor_name.toLowerCase() === (row['Pastor']||'').toLowerCase());
-        const c = churches.find(x => x.church_name.toLowerCase() === (row['Church']||'').toLowerCase());
-        const d = districts.find(x => x.district_name.toLowerCase() === (row['District']||'').toLowerCase());
+        const pInput = (row['pastor']||'').toLowerCase();
+        const cInput = (row['church']||'').toLowerCase();
+        const dInput = (row['district']||'').toLowerCase();
+
+        const p = pastors.find(x => x.pastor_name.toLowerCase() === pInput);
+        const c = churches.find(x => x.church_name.toLowerCase() === cInput);
+        const d = districts.find(x => x.district_name.toLowerCase() === dInput);
 
         if (p && c) {
           data.churchAssignments.push({
             pastor_id: p.pastor_id,
             church_id: c.church_id,
             district_id: d ? d.district_id : c.district_id,
-            assignment_type_code: (row['Type'] || 'regular').toLowerCase(),
-            start_date: row['Since'] || new Date().toISOString().split('T')[0],
+            assignment_type_code: (row['type'] || 'regular').toLowerCase(),
+            start_date: row['since'] || new Date().toISOString().split('T')[0],
             notes: 'Imported from Assignments Sheet',
             created_at: new Date().toISOString()
           });
@@ -199,24 +208,49 @@ export function parseDatabaseFromCSV(csvText) {
       });
     }
     // 2. Churches Sheet: church_id, church_name, church_address, district, zone, is_international, notes
-    else if (headers.includes('church_name') && headers.includes('district')) {
+    else if (normHeaders.includes('churchname') && normHeaders.includes('district')) {
       lines.slice(1).forEach(line => {
         if (!line.trim()) return;
         const vals = parseCSVLine(line);
         const row = {};
-        headers.forEach((h, i) => row[h] = vals[i]);
+        normHeaders.forEach((h, i) => row[h] = vals[i]);
 
-        const d = districts.find(x => x.district_name.toLowerCase() === (row['district']||'').toLowerCase());
-        const z = zones.find(x => x.zone_name.toLowerCase() === (row['zone']||'').toLowerCase() && (!d || x.district_id === d.district_id));
+        const dInput = (row['district']||'').toLowerCase();
+        const zInput = (row['zone']||'').toLowerCase();
+
+        const d = districts.find(x => x.district_name.toLowerCase() === dInput);
+        const z = zones.find(x => x.zone_name.toLowerCase() === zInput && (!d || x.district_id === d.district_id));
 
         data.churches.push({
-          church_id: row['church_id'] ? Number(row['church_id']) : null,
-          church_name: row['church_name'],
-          church_address: row['church_address'] || '',
+          church_id: row['churchid'] ? Number(row['churchid']) : null,
+          church_name: row['churchname'],
+          church_address: row['churchaddress'] || '',
           district_id: d ? d.district_id : null,
           zone_id: z ? z.zone_id : null,
-          is_international: (row['is_international'] || '').toLowerCase() === 'yes',
+          is_international: (row['isinternational'] || '').toLowerCase() === 'yes',
           notes: row['notes'] || '',
+          created_at: new Date().toISOString()
+        });
+      });
+    }
+    // 3. Pastors Sheet: pastor_id, pastor_name, wife_name, contact_number, birth_date, ...
+    else if (normHeaders.includes('pastorname') && (normHeaders.includes('contactnumber') || normHeaders.includes('birthdate'))) {
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const vals = parseCSVLine(line);
+        const row = {};
+        normHeaders.forEach((h, i) => row[h] = vals[i]);
+
+        data.pastors.push({
+          pastor_id: row['pastorid'] ? Number(row['pastorid']) : null,
+          pastor_name: row['pastorname'],
+          wife_name: row['wifename'] || null,
+          contact_number: row['contactnumber'] || null,
+          birth_date: row['birthdate'] || null,
+          wife_birth_date: row['wifebirthdate'] || null,
+          pastoring_start_date: row['pastoringstartdate'] || row['since'] || null,
+          status_code: row['statuscode'] || 'undeployed',
+          notes: row['notes'] || null,
           created_at: new Date().toISOString()
         });
       });
@@ -227,6 +261,27 @@ export function parseDatabaseFromCSV(csvText) {
 }
 
 // ── Custom Export Generation (Spreadsheets) ──────────────────
+
+export function exportPastorsToCSV() {
+  const header = ['pastor_id', 'pastor_name', 'wife_name', 'contact_number', 'birth_date', 'wife_birth_date', 'pastoring_start_date', 'status_code', 'notes'];
+  const rows = [];
+  rows.push(header.join(',')); // Header
+  pastors.forEach(p => {
+    const values = [
+      p.pastor_id,
+      p.pastor_name,
+      p.wife_name,
+      p.contact_number,
+      p.birth_date,
+      p.wife_birth_date,
+      p.pastoring_start_date,
+      p.status_code,
+      p.notes
+    ];
+    rows.push(values.map(v => escapeCSV(v)).join(','));
+  });
+  return rows.join('\n');
+}
 
 export function exportPastorsToHTML() {
   function imgCell(dataUrl) {
