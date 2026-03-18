@@ -16,13 +16,13 @@ export function renderReports() {
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
       <!-- Desktop Tabs -->
       <div class="desktop-tabs">
-        <button class="tab-btn active" data-report="suspended" onclick="switchReport('suspended',this)">${icon('ban','icon-xs')} Suspended</button>
-        <button class="tab-btn" data-report="undeployed" onclick="switchReport('undeployed',this)">${icon('user-x','icon-xs')} Undeployed</button>
-        <button class="tab-btn" data-report="interim" onclick="switchReport('interim',this)">${icon('clock','icon-xs')} Interim</button>
-        <button class="tab-btn" data-report="vacant" onclick="switchReport('vacant',this)">${icon('alert-triangle','icon-xs')} Vacant Churches</button>
-        <button class="tab-btn" data-report="zone-counts" onclick="switchReport('zone-counts',this)">${icon('bar-chart-2','icon-xs')} Zone Coverage</button>
-        <button class="tab-btn" data-report="international" onclick="switchReport('international',this)">${icon('globe','icon-xs')} International</button>
-        <button class="tab-btn" data-report="timeline" onclick="switchReport('timeline',this)">${icon('clock','icon-xs')} Timeline</button>
+        <button type="button" class="tab-btn active" data-report="suspended" onclick="switchReport('suspended',this)">${icon('ban','icon-xs')} Suspended</button>
+        <button type="button" class="tab-btn" data-report="undeployed" onclick="switchReport('undeployed',this)">${icon('user-x','icon-xs')} Undeployed</button>
+        <button type="button" class="tab-btn" data-report="interim" onclick="switchReport('interim',this)">${icon('clock','icon-xs')} Interim</button>
+        <button type="button" class="tab-btn" data-report="vacant" onclick="switchReport('vacant',this)">${icon('alert-triangle','icon-xs')} Vacant Churches</button>
+        <button type="button" class="tab-btn" data-report="zone-counts" onclick="switchReport('zone-counts',this)">${icon('bar-chart-2','icon-xs')} Zone Coverage</button>
+        <button type="button" class="tab-btn" data-report="international" onclick="switchReport('international',this)">${icon('globe','icon-xs')} International</button>
+        <button type="button" class="tab-btn" data-report="timeline" onclick="switchReport('timeline',this)">${icon('clock','icon-xs')} Timeline</button>
       </div>
       <!-- Mobile Dropdown -->
       <select class="mobile-tabs-dropdown hidden" onchange="switchReportDropdown(this.value)">
@@ -262,7 +262,7 @@ function reportTimeline() {
           ${pastors.map(p => `<option value="${p.pastor_id}">${esc(p.pastor_name)} (${p.status_code})</option>`).join('')}
         </select>
       </div>
-      <button class="btn btn-outline" onclick="exportTimeline()">${icon('download')} Export</button>
+      <button type="button" class="btn btn-outline" onclick="exportTimeline()">${icon('download')} Export</button>
     </div>
     <div id="timeline-result"></div>`;
 
@@ -306,7 +306,7 @@ window.renderTimeline = function() {
 
 // ── Helpers ──────────────────────────────────────────────────
 function reportTable(title, badge, headers, rows, exportType) {
-  const exportBtn = exportType ? `<button class="btn btn-sm btn-outline" style="margin-left:auto" onclick="window.downloadReportSheet && window.downloadReportSheet('${exportType}')">${icon('download', 'icon-xs')} Export</button>` : '';
+  const exportBtn = exportType ? `<button type="button" class="btn btn-sm btn-outline" style="margin-left:auto" onclick="window.downloadReportSheet && window.downloadReportSheet('${exportType}')">${icon('download', 'icon-xs')} Export</button>` : '';
   return `<div class="card" style="padding:0">
     <div class="card-header" style="padding:16px 20px; display:flex; align-items:center;">
       <div class="card-title">${title}</div>

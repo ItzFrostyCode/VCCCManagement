@@ -19,11 +19,11 @@ let currentView = 'all'; // all, active, undeployed, suspended, interim
 export function renderPastors() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = `
-    <button class="btn btn-secondary" onclick="exportSectionCSV('pastors')">${icon('download')} <span>Export</span></button>
-    <button class="btn btn-secondary" onclick="triggerImportCSV('pastors')">${icon('upload')} <span>Import</span></button>
-    <button class="btn btn-primary" onclick="openAddPastorModal()">${icon('user-plus')} <span>Add Pastor</span></button>
-  `;
+    actions.innerHTML = `
+      <button type="button" class="btn btn-secondary" onclick="openPastorsExportModal()">${icon('download')} <span>Export</span></button>
+      <button type="button" class="btn btn-secondary" onclick="triggerImportCSV('pastors')">${icon('upload')} <span>Import</span></button>
+      <button type="button" class="btn btn-primary" onclick="openAddPastorModal()">${icon('user-plus')} <span>Add Pastor</span></button>
+    `;
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
@@ -52,7 +52,7 @@ export function renderPastors() {
 
 function renderTab(id, label, iconName) {
   const isActive = currentView === id;
-  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchView('${id}')">
+  return `<button type="button" class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchView('${id}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }
@@ -153,76 +153,79 @@ function renderTableView(list) {
 // ── Pastor Form ───────────────────────────────────────────────
 function buildPastorForm(p = {}) {
   return `
-    <div class="form-section-title">${icon('user','icon-xs')} Pastor Information</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>${icon('user','icon-xs')} Pastor's Name *</label>
-        <input type="text" id="f-name" placeholder="Full name" value="${esc(p.pastor_name||'')}">
-      </div>
-      <div class="form-group">
-        <label>${icon('phone','icon-xs')} Contact Number</label>
-        <input type="tel" id="f-contact" placeholder="+63 9XX XXX XXXX" value="${esc(p.contact_number||'')}">
-      </div>
-      <div class="form-group">
-        <label>${icon('calendar','icon-xs')} Pastor's Birth Date (optional)</label>
-        <input type="date" id="f-birth" value="${p.birth_date||''}">
-      </div>
-      <div class="form-group">
-        <label>${icon('calendar','icon-xs')} Pastoring Start Date *</label>
-        <input type="date" id="f-pastoring-start" value="${p.pastoring_start_date||''}">
-      </div>
-      <div class="form-group span-2">
-        <label>${icon('activity','icon-xs')} Status</label>
-        <select id="f-status">
-          ${statusOptions(p.status_code || 'undeployed')}
-        </select>
-      </div>
-      <div class="form-group span-2">
-        <label>${icon('file-text','icon-xs')} Notes</label>
-        <textarea id="f-notes" placeholder="Optional Notes (ex. Pastor Background, Pastor Education,Previous Work, Pastor Testimony etc...)">${esc(p.notes||'')}</textarea>
-      </div>
-    </div>
-
-    <div class="form-section-title">${icon('heart','icon-xs')} Wife's Information</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>${icon('user','icon-xs')} Wife's Name</label>
-        <input type="text" id="f-wife" placeholder="Wife's full name (optional)" value="${esc(p.wife_name||'')}">
-      </div>
-      <div class="form-group">
-        <label>${icon('calendar','icon-xs')} Wife's Birth Date (optional)</label>
-        <input type="date" id="f-wife-birth" value="${p.wife_birth_date||''}">
-      </div>
-    </div>
-
-    <div class="form-section-title">${icon('image','icon-xs')} Photos</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Pastor's Photo</label>
-        <div class="img-upload-wrap">
-          <div class="img-preview" id="pastor-img-preview" onclick="document.getElementById('pastor-img').click()" style="cursor:pointer">
-            ${p.image_url
-              ? `<img src="${p.image_url}" alt="pastor" style="width:100%;height:100%;object-fit:cover">`
-              : `<div class="img-placeholder">${icon('image-plus','icon-lg')}<span>Click to upload</span></div>`}
-          </div>
-          <input type="file" id="pastor-img" accept="image/*" style="display:none">
-          <button type="button" class="btn btn-sm btn-secondary" style="margin-top:6px" onclick="document.getElementById('pastor-img').click()">
-            ${icon('upload')} Upload Photo
-          </button>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="form-section-title">${icon('user')} Pastor Information</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Pastor's Name *</label>
+          <input type="text" id="f-name" placeholder="Full name" value="${esc(p.pastor_name||'')}">
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="tel" id="f-contact" placeholder="+63 9XX XXX XXXX" value="${esc(p.contact_number||'')}">
+        </div>
+        <div class="form-group">
+          <label>Pastor's Birth Date</label>
+          <input type="date" id="f-birth" value="${p.birth_date||''}">
+        </div>
+        <div class="form-group">
+          <label>Pastoring Start Date *</label>
+          <input type="date" id="f-pastoring-start" value="${p.pastoring_start_date||''}">
+        </div>
+        <div class="form-group span-2">
+          <label>Status</label>
+          <select id="f-status">
+            ${statusOptions(p.status_code || 'undeployed')}
+          </select>
+        </div>
+        <div class="form-group span-2">
+          <label>Notes</label>
+          <textarea id="f-notes" rows="2" placeholder="Background, Education, Testimony, etc...">${esc(p.notes||'')}</textarea>
         </div>
       </div>
-      <div class="form-group">
-        <label>Wife's Photo</label>
-        <div class="img-upload-wrap">
-          <div class="img-preview" id="wife-img-preview" onclick="document.getElementById('wife-img').click()" style="cursor:pointer">
+
+      <div class="form-section-title">${icon('heart')} Wife's Information</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Wife's Name</label>
+          <input type="text" id="f-wife" placeholder="Wife's full name (optional)" value="${esc(p.wife_name||'')}">
+        </div>
+        <div class="form-group">
+          <label>Wife's Birth Date</label>
+          <input type="date" id="f-wife-birth" value="${p.wife_birth_date||''}">
+        </div>
+      </div>
+
+      <div class="form-section-title">${icon('image')} Profile Photos</div>
+      <div class="photo-upload-grid">
+        <div class="photo-bucket">
+          <div class="photo-preview-circle" id="pastor-img-preview" onclick="document.getElementById('pastor-img').click()" style="cursor:pointer">
+            ${p.image_url
+              ? `<img src="${p.image_url}" alt="pastor">`
+              : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);background:var(--bg-base)">${icon('user','icon-lg')}</div>`}
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Pastor's Photo</div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('pastor-img').click()">
+              ${icon('upload')} Upload
+            </button>
+          </div>
+          <input type="file" id="pastor-img" accept="image/*" style="display:none">
+        </div>
+
+        <div class="photo-bucket">
+          <div class="photo-preview-circle" id="wife-img-preview" onclick="document.getElementById('wife-img').click()" style="cursor:pointer">
             ${p.wife_image_url
-              ? `<img src="${p.wife_image_url}" alt="wife" style="width:100%;height:100%;object-fit:cover">`
-              : `<div class="img-placeholder">${icon('image-plus','icon-lg')}<span>Click to upload</span></div>`}
+              ? `<img src="${p.wife_image_url}" alt="wife">`
+              : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);background:var(--bg-base)">${icon('user','icon-lg')}</div>`}
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Wife's Photo</div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('wife-img').click()">
+              ${icon('upload')} Upload
+            </button>
           </div>
           <input type="file" id="wife-img" accept="image/*" style="display:none">
-          <button type="button" class="btn btn-sm btn-secondary" style="margin-top:6px" onclick="document.getElementById('wife-img').click()">
-            ${icon('upload')} Upload Photo
-          </button>
         </div>
       </div>
     </div>`;

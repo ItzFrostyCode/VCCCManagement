@@ -17,11 +17,11 @@ let currentView = 'all'; // 'all', 'vacant', 'international'
 export function renderChurches() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = `
-    <button class="btn btn-secondary" onclick="exportSectionCSV('churches')">${icon('download')} <span>Export</span></button>
-    <button class="btn btn-secondary" onclick="triggerImportCSV('churches')">${icon('upload')} <span>Import</span></button>
-    <button class="btn btn-primary" onclick="openAddChurchModal()">${icon('plus')} <span>Add Church</span></button>
-  `;
+    actions.innerHTML = `
+      <button type="button" class="btn btn-secondary" onclick="openChurchesExportModal()">${icon('download')} <span>Export</span></button>
+      <button type="button" class="btn btn-secondary" onclick="triggerImportCSV('churches')">${icon('upload')} <span>Import</span></button>
+      <button type="button" class="btn btn-primary" onclick="openAddChurchModal()">${icon('plus')} <span>Add Church</span></button>
+    `;
 
   content.innerHTML = `<div class="fade-in">
     <div class="filter-bar tabs-container" style="margin-bottom:16px">
@@ -51,7 +51,7 @@ export function renderChurches() {
 
 function renderTab(id, label, iconName) {
   const isActive = currentView === id;
-  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchChurchView('${id}')">
+  return `<button type="button" class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchChurchView('${id}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }

@@ -24,9 +24,9 @@ export function renderAssignments() {
   const content = document.getElementById('page-content');
   const actions = document.getElementById('topbar-actions');
   actions.innerHTML = `
-    <button class="btn btn-secondary" onclick="exportSectionCSV('assignments')">${icon('download')} <span>Export</span></button>
-    <button class="btn btn-secondary" onclick="triggerImportCSV('assignments')">${icon('upload')} <span>Import</span></button>
-    <button class="btn btn-primary" onclick="openAddAssignmentModal()">${icon('plus')} <span>New Assignment</span></button>
+    <button type="button" class="btn btn-secondary" onclick="openAssignmentsExportModal()">${icon('download')} <span>Export</span></button>
+    <button type="button" class="btn btn-secondary" onclick="triggerImportCSV('assignments')">${icon('upload')} <span>Import</span></button>
+    <button type="button" class="btn btn-primary" onclick="openAddAssignmentModal()">${icon('plus-circle')} <span>New Assignment</span></button>
   `;
 
   content.innerHTML = `<div class="fade-in">
@@ -48,7 +48,7 @@ export function renderAssignments() {
 
 function renderTab(id, label, iconName) {
   const isActive = currentTab === id;
-  return `<button class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchAssignTab('${id}')">
+  return `<button type="button" class="segmented-btn ${isActive ? 'active' : ''}" onclick="switchAssignTab('${tab}')">
     ${icon(iconName, 'icon-xs')} ${label}
   </button>`;
 }
@@ -111,8 +111,8 @@ function renderActiveTab() {
             <td data-label="Since" class="td-muted">${formatDate(a.start_date)}</td>
             <td>
               <div class="td-actions">
-                <button class="btn btn-sm btn-danger" onclick="closeAssignment(${a.assignment_id})">${icon('x-circle')} Close</button>
-                <button class="btn btn-sm btn-secondary" onclick="openSuspendModal(${a.pastor_id})">${icon('ban')} Suspend</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="closeAssignment(${a.assignment_id})">${icon('x-circle')} Close</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="openSuspendModal(${a.pastor_id})">${icon('ban')} Suspend</button>
               </div>
             </td>
           </tr>`;
@@ -141,7 +141,7 @@ function renderUndeployedTab() {
         ${p.contact_number ? `<div style="font-size:12px;color:var(--text-muted)">${icon('phone','icon-xs')} ${esc(p.contact_number)}</div>` : ''}
         ${p.pastoring_start_date ? `<div style="font-size:12px;color:var(--text-muted)">${icon('briefcase','icon-xs')} Since ${formatDate(p.pastoring_start_date)}</div>` : ''}
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openAddAssignmentModal(${p.pastor_id})">${icon('plus')} Assign</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openAddAssignmentModal(${p.pastor_id})">${icon('plus')} Assign</button>
     </div>`).join('')}
   </div>`;
 }
@@ -181,7 +181,7 @@ function renderSuspendedTab() {
           <td data-label="Notes" class="td-muted">${p.notes ? `${icon('file-text','icon-xs')} ${esc(p.notes)}` : '—'}</td>
           <td>
             <div class="td-actions">
-              <button class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reinstate</button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reinstate</button>
             </div>
           </td>
         </tr>`).join('')}
@@ -230,7 +230,7 @@ function renderInterimTab() {
             <td data-label="Since" class="td-muted">${active ? `${icon('calendar','icon-xs')} ${formatDate(active.start_date)}` : '—'}</td>
             <td>
               <div class="td-actions">
-                <button class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reassign</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="openReinstateModal(${p.pastor_id})">${icon('refresh-cw')} Reassign</button>
               </div>
             </td>
           </tr>`;
@@ -355,8 +355,8 @@ window.openAddAssignmentModal = function(preselectedPastorId = null, preselected
         <textarea id="f-assign-notes" placeholder="Optional notes"></textarea>
       </div>
     </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-primary" onclick="saveAssignment()">${icon('save')} Save Assignment</button>`,
+    `<button type="button" class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
+     <button type="button" class="btn btn-primary" onclick="saveAssignment()">${icon('save')} Save Assignment</button>`,
     'modal-lg'
   );
 };
@@ -471,8 +471,8 @@ window.openSuspendModal = function(preselectedId = null) {
         <textarea id="f-suspend-notes" placeholder="Reason for suspension…"></textarea>
       </div>
     </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-danger" onclick="confirmSuspend()">${icon('ban')} Suspend</button>`
+    `<button type="button" class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
+     <button type="button" class="btn btn-danger" onclick="confirmSuspend()">${icon('ban')} Suspend</button>`
   );
 };
 
@@ -527,8 +527,8 @@ window.openReinstateModal = function(preselectedId = null) {
         <textarea id="f-reinstate-notes" placeholder="Optional notes…"></textarea>
       </div>
     </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-primary" onclick="confirmReinstate()">${icon('check')} Reinstate</button>`
+    `<button type="button" class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
+     <button type="button" class="btn btn-primary" onclick="confirmReinstate()">${icon('check')} Reinstate</button>`
   );
 };
 

@@ -52,12 +52,7 @@ function loadFromStorage() {
     coerceIds(parsed.churchAssignments, ['assignment_id', 'pastor_id', 'district_id', 'church_id']);
     coerceIds(parsed.pastorEvents, ['event_id', 'pastor_id']);
 
-    if (parsed.counters) {
-      Object.keys(parsed.counters).forEach(k => {
-        parsed.counters[k] = Number(parsed.counters[k]);
-      });
-    }
-
+    parsed.isDataLoaded = true; // Mark as successfully loaded
     return parsed;
   } catch (e) {
     console.warn('[ChurchMS] Failed to load saved data:', e);
@@ -66,6 +61,7 @@ function loadFromStorage() {
 }
 
 const _saved = loadFromStorage();
+export const isDataLoaded = !!_saved;
 
 // ── Main Data Arrays ─────────────────────────────────────────
 // These are exported as mutable arrays. Other modules push/splice
@@ -116,6 +112,13 @@ export function nextId(key) {
  * Every module that modifies data should call saveAll() after changes.
  */
 export function saveAll() {
+  // Defensive check: Don't save if we haven't loaded anything yet and arrays are empty.
+  // This prevents overwriting a valid database with empty arrays if a script error occurs during boot.
+  if (!isDataLoaded && pastors.length === 0 && districts.length === 0) {
+    console.warn('[ChurchMS] saveAll blocked: Data not yet loaded and arrays are empty.');
+    return;
+  }
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       districts,
@@ -223,6 +226,7 @@ export function mergeData(newData) {
         districts[nameExistsIdx] = { ...districts[nameExistsIdx], ...nd };
         stats.replaced++;
       } else {
+        if (!nd.district_id) nd.district_id = ++counters.district;
         districts.push(nd);
         stats.added++;
       }
@@ -241,6 +245,7 @@ export function mergeData(newData) {
         zones[nameExistsIdx] = { ...zones[nameExistsIdx], ...nz };
         stats.replaced++;
       } else {
+        if (!nz.zone_id) nz.zone_id = ++counters.zone;
         zones.push(nz);
         stats.added++;
       }
@@ -259,6 +264,7 @@ export function mergeData(newData) {
         churches[nameExistsIdx] = { ...churches[nameExistsIdx], ...nc };
         stats.replaced++;
       } else {
+        if (!nc.church_id) nc.church_id = ++counters.church;
         churches.push(nc);
         stats.added++;
       }
@@ -277,6 +283,7 @@ export function mergeData(newData) {
         pastors[nameExistsIdx] = { ...pastors[nameExistsIdx], ...np };
         stats.replaced++;
       } else {
+        if (!np.pastor_id) np.pastor_id = ++counters.pastor;
         pastors.push(np);
         stats.added++;
       }
@@ -297,6 +304,7 @@ export function mergeData(newData) {
         churchAssignments[existsIdx] = { ...churchAssignments[existsIdx], ...na };
         stats.replaced++;
       } else {
+        if (!na.assignment_id) na.assignment_id = ++counters.assignment;
         churchAssignments.push(na);
         stats.added++;
       }
@@ -314,6 +322,7 @@ export function mergeData(newData) {
         pastorEvents[idx] = { ...pastorEvents[idx], ...ne };
         stats.replaced++;
       } else if (!exists) {
+        if (!ne.event_id) ne.event_id = ++counters.event;
         pastorEvents.push(ne);
         stats.added++;
       } else {
@@ -374,6 +383,58 @@ export function cascadeDeleteChurch(churchId) {
     }
   }
   // Delete church
-  const idx = churches.findIndex(x => x.church_id === churchId);
   if (idx > -1) churches.splice(idx, 1);
+}
+
+/**
+ * Collects all relevant churchms_* keys from localStorage for a full backup.
+ */
+export function getFullBackupState() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('churchms_')) {
+      try {
+        const val = localStorage.getItem(key);
+        data[key] = JSON.parse(val);
+      } catch (e) {
+        data[key] = localStorage.getItem(key);
+      }
+    }
+  }
+  return data;
+}
+
+/**
+ * Validates and restores the entire state from a backup object.
+ * Overwrites all existing churchms_* keys in localStorage.
+ */
+export function restoreFullBackupState(backupData) {
+  if (!backupData || typeof backupData !== 'object') {
+    throw new Error('Invalid backup data format.');
+  }
+
+  // Basic validation: ensure the main data key exists or at least some churchms_ keys
+  const keys = Object.keys(backupData);
+  if (!keys.some(k => k.startsWith('churchms_'))) {
+    throw new Error('Backup does not contain valid ChurchMS data.');
+  }
+
+  // Clear existing churchms_ keys
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('churchms_')) keysToRemove.push(key);
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  // Restore from backup
+  Object.keys(backupData).forEach(key => {
+    if (key.startsWith('churchms_')) {
+      const val = backupData[key];
+      localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
+    }
+  });
+
+  return true;
 }

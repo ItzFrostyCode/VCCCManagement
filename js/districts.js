@@ -14,6 +14,14 @@ import {
 import { openModal, closeModal, navigate, updateNavCounts } from './app.js';
 
 const TODAY = new Date().toISOString().split('T')[0];
+const EXPANDED_DISTRICTS_KEY = 'churchms_expanded_districts';
+
+// Initialize expanded state from storage
+let expandedDistricts = new Set(JSON.parse(localStorage.getItem(EXPANDED_DISTRICTS_KEY) || '[]'));
+
+function saveExpandedState() {
+  localStorage.setItem(EXPANDED_DISTRICTS_KEY, JSON.stringify([...expandedDistricts]));
+}
 
 // ── Render Districts Page ─────────────────────────────────────
 export function renderDistricts() {
@@ -21,9 +29,9 @@ export function renderDistricts() {
   const actions = document.getElementById('topbar-actions');
   if (actions) {
     actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="exportSectionCSV('districts')">${icon('download')} <span>Export</span></button>
-      <button class="btn btn-secondary" onclick="triggerImportCSV('districts')">${icon('upload')} <span>Import</span></button>
-      <button class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} <span>Add District</span></button>
+      <button type="button" class="btn btn-secondary" onclick="openDistrictsExportModal()">${icon('download')} <span>Export</span></button>
+      <button type="button" class="btn btn-secondary" onclick="triggerImportCSV('districts')">${icon('upload')} <span>Import</span></button>
+      <button type="button" class="btn btn-primary" onclick="openAddDistrictModal()">${icon('plus')} <span>Add District</span></button>
     `;
   }
 
@@ -83,30 +91,31 @@ function renderDistrictCard(district) {
 
   const leaderObj    = district.leader_pastor_id ? pastors.find(p => p.pastor_id === district.leader_pastor_id) : null;
   const assistantObj = district.assistant_leader_pastor_id ? pastors.find(p => p.pastor_id === district.assistant_leader_pastor_id) : null;
+  const isExpanded   = expandedDistricts.has(district.district_id);
 
   return `<div class="card" id="district-card-${district.district_id}" style="margin-bottom:16px; padding:0; overflow:hidden; transition:all 0.2s">
     <!-- Header Row (Always Visible) -->
-    <div class="district-header-row" onclick="toggleDistrictCard(${district.district_id})" style="background: ${hexToRgba(district.color || '#4f46e5', 0.1)}; border-bottom: 1px solid ${hexToRgba(district.color || '#4f46e5', 0.15)}; padding: 12px 16px; display:flex; align-items:center;">
+    <div class="district-header-row" onclick="toggleDistrictCard(${district.district_id})" style="background: ${hexToRgba(district.color || '#4f46e5', 0.1)}; border-bottom: 1px solid ${hexToRgba(district.color || '#4f46e5', 0.15)}; padding: 12px 16px; display:flex; align-items:center; cursor:pointer;">
       <div style="flex:1">
         <div class="district-name" style="font-size:16px;font-weight:700;transition:color 0.2s">${esc(district.district_name)}</div>
         <div style="font-size:12px;color:var(--text-muted)">${distZones.length} zones · ${totalChurches} churches</div>
       </div>
       <div style="display:flex;align-items:center;gap:4px">
-        <button class="btn-icon" onclick="event.stopPropagation(); toggleDistrictEditMode(${district.district_id})">${icon('settings','icon-sm')}</button>
-        <div style="transform:rotate(0deg);transition:transform 0.2s" id="chevron-${district.district_id}">${icon('chevron-down')}</div>
+        <button type="button" class="btn-icon" onclick="event.stopPropagation(); toggleDistrictEditMode(${district.district_id})">${icon('settings','icon-sm')}</button>
+        <div style="transform:rotate(${isExpanded ? '180deg' : '0deg'});transition:transform 0.2s" id="chevron-${district.district_id}">${icon('chevron-down')}</div>
       </div>
     </div>
 
     <!-- Body Content (Collapsible) -->
-    <div class="card-body-content" id="district-body-${district.district_id}" style="padding: 16px; display:none">
+    <div class="card-body-content" id="district-body-${district.district_id}" style="padding: 16px; display:${isExpanded ? 'block' : 'none'}">
 
       <!-- Edit Mode Actions -->
       <div class="edit-actions" style="margin-bottom:16px; gap:8px; border-bottom:1px solid var(--border); padding-bottom:16px">
-        <button class="btn btn-sm btn-ghost" onclick="openEditDistrictModal(${district.district_id})">${icon('pencil')} Rename</button>
-        <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deleteDistrict(${district.district_id})">${icon('trash')} Delete</button>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="openEditDistrictModal(${district.district_id})">${icon('pencil')} Rename</button>
+        <button type="button" class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deleteDistrict(${district.district_id})">${icon('trash')} Delete</button>
         <div style="flex:1"></div>
-        <button class="btn btn-sm btn-ghost" onclick="openAddZoneModal(${district.district_id})">${icon('plus')} Zone</button>
-        <button class="btn btn-sm btn-ghost" onclick="openAddChurchInDistrict(${district.district_id})">${icon('church')} Church</button>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="openAddZoneModal(${district.district_id})">${icon('plus')} Zone</button>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="openAddChurchInDistrict(${district.district_id})">${icon('church')} Church</button>
       </div>
 
       <!-- Leadership Grid -->
@@ -169,6 +178,10 @@ window.toggleDistrictCard = function(id) {
     const isHidden = body.style.display === 'none';
     body.style.display = isHidden ? 'block' : 'none';
     if (chev) chev.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    
+    if (isHidden) expandedDistricts.add(id);
+    else expandedDistricts.delete(id);
+    saveExpandedState();
   }
 };
 
@@ -181,6 +194,8 @@ window.toggleDistrictEditMode = function(id) {
   if (body && body.style.display === 'none') {
     body.style.display = 'block';
     if (chev) chev.style.transform = 'rotate(180deg)';
+    expandedDistricts.add(id);
+    saveExpandedState();
   }
   
   if (card) {

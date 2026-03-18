@@ -258,10 +258,43 @@ tbody td { padding:10px var(--space-4); color:var(--text-primary); vertical-alig
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); margin-bottom: 8px; }
 .form-grid.cols-1 { grid-template-columns:1fr; }
 .form-grid.cols-3 { grid-template-columns:1fr 1fr 1fr; }
-.form-group { display:flex; flex-direction:column; gap:6px; margin-bottom: 0; }
+.form-group { display:flex; flex-direction:column; gap:8px; margin-bottom: 0; }
 .form-group.span-2 { grid-column:span 2; }
 .form-group.span-3 { grid-column:span 3; }
-label { font-size:12px; font-weight:600; color:var(--text-secondary); letter-spacing:0.04em; text-transform:uppercase; }
+.form-section-title { 
+  font-size: 13px; font-weight: 700; color: var(--accent); 
+  text-transform: uppercase; letter-spacing: 0.05em; 
+  margin: 24px 0 12px 0; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.form-section-title:first-child { margin-top: 0; }
+
+/* Photo Upload refined */
+.photo-upload-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+.photo-bucket {
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition);
+}
+.photo-bucket:hover { border-color: var(--accent); background: var(--bg-hover); }
+.photo-preview-circle {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-base);
+  border: 4px solid var(--bg-surface);
+  box-shadow: var(--shadow-md);
+}
+.photo-preview-circle img { width: 100%; height: 100%; object-fit: cover; }
+label:not(.no-style) { font-size:12px; font-weight:600; color:var(--text-secondary); letter-spacing:0.04em; text-transform:uppercase; }
 input[type="text"],input[type="date"],input[type="tel"],input[type="url"],
 input[type="number"],input[type="email"],select,textarea {
   background:var(--bg-elevated); border:1px solid var(--border);
@@ -339,6 +372,7 @@ textarea { resize:vertical; min-height:80px; }
   display:flex; flex-direction:column;
 }
 .modal-overlay.open .modal { transform:translateY(0) scale(1); }
+.modal-md  { max-width:520px; }
 .modal-lg  { max-width:800px; }
 .modal-xl  { max-width:1000px; }
 .modal-header {
@@ -591,25 +625,56 @@ textarea { resize:vertical; min-height:80px; }
 .origin-flag { font-size:24px; }
 .zone-progress { height:6px; background:var(--bg-base); border-radius:3px; margin-top:6px; overflow:hidden; }
 .zone-bar { height:100%; background:var(--success); }
-@media(max-width:1024px) {
-  .sidebar {
-    transform: translateX(-100%);
-    box-shadow: none;
-  }
-  .sidebar.open {
-    transform: translateX(0);
-    box-shadow: var(--shadow-lg);
-  }
-  .main-content { margin-left:0; }
-  #menu-toggle { display: inline-flex !important; }
-  .sidebar .sidebar-close-btn { display: inline-flex; }
   .page-content { padding:20px; }
   .topbar { padding:0 20px; }
   .form-grid { grid-template-columns:1fr; }
   .form-group.span-2,.form-group.span-3 { grid-column:span 1; }
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
+
+
+/* ── Export Option Cards ────────────────────────────────────── */
+.export-opt-card {
+  position: relative;
+  cursor: pointer;
+  display: block;
 }
-/* merged into the block below */
+.export-opt-card input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0; width: 0;
+}
+.opt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 16px;
+  background: var(--bg-base);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition);
+  gap: 8px;
+}
+.export-opt-card:hover .opt-content {
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+}
+.export-opt-card input:checked + .opt-content {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: var(--shadow-accent);
+}
+.opt-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.opt-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 
 /* ── Desktop: hide mobile-only elements ──────────────────── */
 .bottom-nav, .fab-container { display: none !important; }
@@ -768,249 +833,250 @@ textarea { resize:vertical; min-height:80px; }
   .table-wrapper td:not(:nth-child(1)):not(:last-child) > span {
     text-align: right;
   }
-  /* Actions row */
-  .table-wrapper td:last-child {
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
-    padding-top: 12px !important;
-    border-top: 1px solid var(--border) !important;
-  }
-  .table-wrapper td .td-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  /* Compact action buttons inside table cards */
-  .table-wrapper td:last-child .btn,
-  .table-wrapper td:last-child .btn-sm {
-    font-size: 12px;
-    padding: 6px 10px;
-    min-height: 36px;
-  }
-
-  /* ── Form Grid ────────────────────────────────────────────── */
-  .form-grid { grid-template-columns: 1fr; }
-  .form-group.span-2, .form-group.span-3 { grid-column: span 1; }
-
-  /* ── District Edit Actions ────────────────────────────────── */
-  /* Ensure the district button row wraps on narrow screens */
-  .edit-actions {
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-  }
-  .edit-actions .btn { min-height: 36px; }
-
-  /* ── Zone Card Actions ────────────────────────────────────── */
+  /* ── Actions row / Zone Card Actions ────────────────────────────────────── */
+.table-wrapper td:last-child {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 12px !important;
+  /* add additional action styles here */
 }
 
-@media(max-width: 640px) {
-  .topbar-actions .btn span { display: none; }
-  .topbar-actions .btn { padding: 8px 10px; }
+/* Desktop / tablet breakpoints */
+@media (max-width: 1024px) {
+  #menu-toggle {
+    display: flex !important;
+    margin-right: 12px;
+  }
+  .topbar {
+    padding: 0 16px;
+    height: 64px;
+  }
 }
-  /* Zone card: allow action column to shrink */
-  .zone-card { align-items: flex-start; flex-wrap: wrap; }
-  .zone-card .td-actions { flex-wrap: wrap; gap: 4px; }
 
-  /* ── Church Row ───────────────────────────────────────────── */
-  /* Church row in zone: pastor+badges wrap neatly */
-  .church-row { flex-wrap: wrap; gap: 8px; }
-  .church-row-pastor { min-width: unset; max-width: 100%; }
-  .church-row-info { flex: 1 1 160px; }
-
-  /* ── Cards & Typography ───────────────────────────────────── */
-  .card-title { font-size: 15px !important; font-weight: 600 !important; }
-  .card-subtitle, .pastor-meta { font-size: 12px !important; }
-  .stat-card, .hierarchy-card, .city-card, .zone-card-wrap { margin-bottom: 10px; }
-
-  /* ── Card & Leadership ───────────────────────────────────── */
-  .card, .leadership-section { margin-bottom: 12px; }
-
-  /* ── Modal → bottom sheet ────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Mobile-specific overrides that were previously leaking */
   .modal-overlay {
-    align-items: flex-end;
-    padding: 0;
+    align-items: center;
+    padding: 20px;
   }
   .modal {
     max-width: 100% !important;
     width: 100%;
-    max-height: 92vh;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    border-bottom: none;
-    transform: translateY(100%);
   }
-  .modal-overlay.open .modal {
-    transform: translateY(0);
-  }
-  .modal-header {
-    padding: 14px 16px;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  }
-  .modal-title { font-size: 16px; }
-  .modal-body { padding: 16px; }
-  .modal-footer {
-    padding: 12px 16px;
-    flex-direction: column-reverse;
-    gap: 8px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  }
-  .modal-footer .btn {
-    width: 100%;
-    justify-content: center;
-    min-height: 46px;
-  }
-
-  /* ── Bottom Nav ──────────────────────────────────────────── */
-  .bottom-nav {
-    display: flex !important;
-    position: fixed;
-    bottom: 0; left: 0;
-    width: 100%;
-    height: 60px;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
-    z-index: 100;
-    justify-content: space-around;
-    align-items: stretch;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .b-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-size: 10px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 0.2s;
-    user-select: none;
-    gap: 3px;
-    min-height: unset;
-  }
-  .b-nav-item i, .b-nav-item svg {
-    width: 22px; height: 22px;
-    pointer-events: none;
-  }
-  .b-nav-item.active { color: var(--accent); }
-
-  /* ── FAB ─────────────────────────────────────────────────── */
-  .fab-container {
-    display: block !important;
-    position: fixed;
-    bottom: 76px;
-    right: 16px;
-    z-index: 99;
-    transition: transform 0.3s;
-  }
-  .fab-container.hidden { transform: scale(0); pointer-events: none; }
-  .fab-btn {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    padding: 0;
-    min-height: unset;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 16px rgba(79,70,229,0.35);
-  }
-  .fab-btn i, .fab-btn svg { width: 24px; height: 24px; color: #fff; pointer-events: none; }
-
-  /* ── Toast ───────────────────────────────────────────────── */
-  .toast-container { left:12px; right:12px; bottom:76px; width:auto; gap:8px; }
-  .toast { min-width:100%; margin:0; }
-
-
-/* ── Small screens (≤320px — older iPhones, narrow Androids) ── */
-@media(max-width:320px) {
-  html { font-size: 13px; }
-  body { overflow-x: hidden; }
-
-  .topbar { padding: 0 12px; }
-  .topbar-title { font-size: 14px; font-weight: 700; }
-
-  .page-content { padding: 60px 12px 78px 12px !important; }
-
-  /* Tabs */
-  .segmented-btn { padding: 5px 8px; font-size: 11px; }
-
-  /* Stats grid: still 2 cols but more compact */
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .stat-card { padding: 10px; gap: 6px; }
-  .stat-icon { width: 30px; height: 30px; }
-  .stat-value { font-size: 18px; }
-  .stat-label, .stat-change { font-size: 10px; }
-
-  /* Badges: compact */
-  .badge { padding: 2px 6px; font-size: 10px; }
-
-  /* Buttons */
-  .btn { padding: 7px 12px; font-size: 13px; }
-  .btn-sm { padding: 4px 8px; font-size: 11px; }
-
-  /* Modal */
-  .modal-title { font-size: 14px; }
-  .modal-header, .modal-body { padding: 12px; }
-  .modal-footer { padding: 10px 12px; gap: 6px; }
-
-  /* Bottom nav */
-  .bottom-nav { height: 54px; }
-  .b-nav-item i, .b-nav-item svg { width: 20px; height: 20px; }
-  .b-nav-item { font-size: 9px; }
-
-  /* Cards */
-  .card { padding: 14px; }
-
-  /* District/Zone rows */
-  .church-row { gap: 6px; padding: 8px 12px; }
-  .church-row-name { font-size: 12px; }
-  .church-row-addr { font-size: 10px; }
-
-  /* Filter bar */
-  .filter-bar select, .filter-bar input { font-size: 13px; padding: 8px 12px; }
-  .search-input-wrap input { padding-left: 32px; }
 }
 
-/* ── Very small screens (≤280px — e.g. budget Androids) ─────── */
-@media(max-width:280px) {
-  html { font-size: 12px; }
+@media (max-width: 640px) {
+  .topbar-actions .btn span {
+    display: none;
+  }
+  .topbar-actions .btn {
+    padding: 8px 10px;
+  }
 
-  .topbar-title { font-size: 13px; }
-  .page-content { padding: 58px 10px 74px 10px !important; }
+  .page-content {
+    padding: 66px 16px 84px 16px !important;
+  }
+}
 
-  /* Segmented: icon only on very small screens */
-  .segmented-btn { padding: 5px 6px; font-size: 10px; gap: 2px; }
-  .segmented-btn svg, .segmented-btn i { display: none; }
+/* ── Small screens (≤320px — older iPhones, narrow Androids) ───────────── */
+@media (max-width: 320px) {
+  html {
+    font-size: 13px;
+  }
+  body {
+    overflow-x: hidden;
+  }
 
-  /* Stats: stack to 1 column */
-  .stats-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
-  .stat-card { padding: 8px; flex-direction: row; align-items: center; }
-  .stat-value { font-size: 16px; }
-  .stat-label { font-size: 9px; }
-  .stat-change { display: none; }
+  .topbar {
+    padding: 0 12px;
+  }
+  .topbar-title {
+    font-size: 14px;
+    font-weight: 700;
+  }
 
-  /* Modal  */
-  .modal-title { font-size: 13px; }
-  .modal-header, .modal-body { padding: 10px; }
-  .modal-footer .btn { font-size: 12px; min-height: 40px; }
+  .page-content {
+    padding: 60px 12px 78px 12px !important;
+  }
+
+  /* Tabs */
+  .segmented-btn {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  /* Stats grid: still 2 cols but more compact */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .stat-card {
+    padding: 10px;
+    gap: 6px;
+  }
+  .stat-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .stat-value {
+    font-size: 18px;
+  }
+  .stat-label,
+  .stat-change {
+    font-size: 10px;
+  }
+
+  /* Badges: compact */
+  .badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  /* Modal */
+  .modal-title {
+    font-size: 14px;
+  }
+  .modal-header,
+  .modal-body {
+    padding: 12px;
+  }
+  .modal-footer {
+    padding: 10px 12px;
+    gap: 6px;
+  }
 
   /* Bottom nav */
-  .bottom-nav { height: 52px; }
-  .b-nav-item i, .b-nav-item svg { width: 18px; height: 18px; }
-  .b-nav-item { font-size: 8px; }
-  .b-nav-item span { display: none; } /* icon-only bottom nav */
+  .bottom-nav {
+    height: 54px;
+  }
+  .b-nav-item i,
+  .b-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+  .b-nav-item {
+    font-size: 9px;
+  }
+}
+
+/* ── Very small screens (≤280px — e.g. budget Androids) ──────────────── */
+@media (max-width: 280px) {
+  html {
+    font-size: 12px;
+  }
+
+  .topbar-title {
+    font-size: 13px;
+  }
+
+  .page-content {
+    padding: 58px 10px 74px 10px !important;
+  }
+
+  /* Segmented: icon only on very small screens */
+  .segmented-btn {
+    padding: 5px 6px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .segmented-btn svg,
+  .segmented-btn i {
+    display: none;
+  }
+
+  /* Stats: stack to 1 column (keeps compact layout) */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .stat-card {
+    padding: 8px;
+    flex-direction: row;
+    align-items: center;
+  }
+  .stat-value {
+    font-size: 16px;
+  }
+  .stat-label {
+    font-size: 9px;
+  }
+  .stat-change {
+    display: none;
+  }
+
+  /* Modal  */
+  .modal-title {
+    font-size: 13px;
+  }
+  .modal-header,
+  .modal-body {
+    padding: 10px;
+  }
+  .modal-footer .btn {
+    font-size: 12px;
+    min-height: 40px;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    height: 52px;
+  }
+  .b-nav-item i,
+  .b-nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+  .b-nav-item {
+    font-size: 8px;
+  }
+  .b-nav-item span {
+    display: none; /* icon-only bottom nav */
+  }
 
   /* Cards */
-  .card { padding: 10px; }
+  .card {
+    padding: 10px;
+  }
 
   /* Buttons: full width in actions */
-  .btn { padding: 6px 10px; font-size: 12px; }
-  .btn-sm { padding: 3px 6px; font-size: 10px; }
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .btn-sm {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
 
   /* Badge: ultra compact */
-  .badge { padding: 1px 4px; font-size: 9px; }
+  .badge {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
 
   /* Forms */
-  label { font-size: 10px; }
-  input, select, textarea { font-size: 12px; padding: 8px 10px; }
+  label {
+    font-size: 10px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
 }
 
 /* ── Ultra-narrow screens (≤260px — extreme edge case) ───────── */
@@ -1113,4 +1179,5 @@ textarea { resize:vertical; min-height:80px; }
 }
 .filter-bar > *, .tabs > * {
   flex-shrink: 1; 
+}
 }

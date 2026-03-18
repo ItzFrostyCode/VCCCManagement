@@ -1,5 +1,5 @@
 
-import { pastors, churches, districts, zones, churchAssignments, clearAllData, replaceData } from './data.js';
+import { pastors, churches, districts, zones, churchAssignments, clearAllData, replaceData, getFullBackupState, restoreFullBackupState } from './data.js';
 import { 
   exportDatabaseToCSV, parseDatabaseFromCSV, 
   exportPastorsToCSV, exportChurchesToCSV, 
@@ -13,19 +13,9 @@ import { renderAssignments } from './assignments.js';
 import { renderReports } from './reports.js';
 import { renderHelp } from './help.js';
 let currentPage = 'dashboard';
-export function updateNavCounts() {
-  const elP = document.getElementById('nav-count-pastors');
-  const elA = document.getElementById('nav-count-assignments');
-  const elD = document.getElementById('nav-count-districts');
-  const elC = document.getElementById('nav-count-churches');
-  if (elP) elP.textContent = pastors.length;
-  if (elA) elA.textContent = churchAssignments.filter(a => !a.end_date).length;
-  if (elD) elD.textContent = districts.length;
-  if (elC) elC.textContent = churches.length;
-}
 export function navigate(page) {
   currentPage = page;
-  updateNavCounts();
+  localStorage.setItem('churchms_current_page', page);
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
@@ -191,7 +181,7 @@ function renderDashboard() {
       <div class="card" style="padding:0">
         <div class="card-header" style="padding:16px 20px">
           <div class="card-title">${icon('clock', 'icon-sm')} Recent Assignments</div>
-          <button class="btn btn-sm btn-secondary" onclick="navigate('assignments')">${icon('arrow-right', 'icon-sm')} View All</button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="navigate('assignments')">${icon('arrow-right', 'icon-sm')} View All</button>
         </div>
         ${recentAssignments.length === 0
           ? `<div class="empty-state" style="padding:32px">${icon('inbox','icon-lg')}<p style="margin-top:12px">No assignments yet.</p></div>`
@@ -255,15 +245,22 @@ window.toggleSidebar = function() {
   document.getElementById('sidebar').classList.toggle('open');
 };
 window.navigate = navigate;
+window.openModal = openModal;
 window.closeModal = closeModal;
 window.handleOverlayClick = handleOverlayClick;
+
+export function updateNavCounts() {
+  // Navigation badges were removed in a previous UI cleanup.
+  // This function is kept as a no-op to maintain compatibility with sectional modules.
+}
+window.updateNavCounts = updateNavCounts;
 window.viewImage = function(url, title) {
   openModal(
     `${icon('image')} ${title || 'Image Preview'}`,
     `<div style="display:flex;justify-content:center;align-items:center;background:var(--bg-base);border-radius:var(--radius-md);overflow:hidden;padding:4px">
        <img src="${url}" style="max-width:100%;max-height:80vh;object-fit:contain;border-radius:var(--radius-sm)">
      </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Close</button>`,
+    `<button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>`,
     'modal-lg'
   );
 };
@@ -272,7 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('click', () => navigate(el.dataset.page));
   });
   updateNavCounts();
-  navigate('dashboard');
+  
+  const savedPage = localStorage.getItem('churchms_current_page') || 'dashboard';
+  navigate(savedPage);
 });
 function renderDataPage() {
   const content = document.getElementById('page-content');
@@ -287,42 +286,30 @@ function renderDataPage() {
             Manage your local database. Export data for analysis or safely import a backup.
           </p>
           <div style="display:flex;flex-direction:column;gap:20px">
-            <!-- Full Database Backup (Top, Full Width) -->
-            <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
-              <div style="margin-bottom:16px">
-                <h3 style="font-size:18px;font-weight:600;margin-bottom:8px">Full Database Backup</h3>
-                <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Download the entire raw database structure. Keep this safe to restore your data later.</p>
+            <!-- Full Database Backup & Restore (Top, Full Width) -->
+            <div class="leadership-grid" style="gap:20px">
+              <!-- Backup -->
+              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
+                <div style="margin-bottom:16px;flex:1">
+                  <h3 style="font-size:18px;font-weight:600;margin-bottom:8px">Full Database Backup</h3>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Download the entire raw database structure as a JSON file. Keep this safe to restore your data exactly as it is now.</p>
+                </div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;font-weight:600" onclick="downloadFullBackup()">${icon('download')} Download Backup (.json)</button>
               </div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;font-weight:600" onclick="downloadCSV()">${icon('download')} Download Full Backup</button>
+
+              <!-- Restore -->
+              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
+                <div style="margin-bottom:16px;flex:1">
+                  <h3 style="font-size:18px;font-weight:600;margin-bottom:8px">Restore from Backup</h3>
+                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Restore your database from a previously downloaded .json backup. <span style="color:var(--danger);font-weight:600">This will overwrite all current data.</span></p>
+                </div>
+                <button class="btn btn-secondary" style="width:100%;justify-content:center;padding:12px;font-size:15px;font-weight:600" onclick="triggerRestoreBackup()">${icon('upload')} Upload & Restore Backup</button>
+              </div>
             </div>
 
-            <!-- Side-by-Side Cards (Stack on Mobile) -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:20px">
-              <!-- Custom User Exports -->
-              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
-                <div style="flex-grow:1;margin-bottom:24px">
-                  <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">Export Spreadsheets</h3>
-                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Download custom formatted data views for Google Sheets or Excel.</p>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:12px">
-                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="openPastorsExportModal()">${icon('users')} Pastors Sheet</button>
-                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="openChurchesExportModal()">${icon('church')} Churches Sheet</button>
-                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="openDistrictsExportModal()">${icon('map')} Districts Sheet</button>
-                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="openDistrictInfoExportModal()">${icon('map-pin')} District Info Sheet</button>
-                  <button class="btn btn-secondary w-full" style="justify-content:center" onclick="downloadReportsSheet()">${icon('clipboard-list')} Assignments Sheet</button>
-                </div>
-              </div>
-
-              <!-- Import -->
-              <div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:24px;background:var(--bg-card);box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;flex-direction:column">
-                <div style="flex-grow:1;margin-bottom:24px">
-                  <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">Import Data</h3>
-                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">Restore from a Full Database Backup CSV file.</p>
-                  <p style="font-size:14px;color:var(--text-muted);line-height:1.5">Existing records with the <strong>same name or ID will be updated</strong> with the new data.</p>
-                </div>
-                <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleFileImport(this)">
-                <button class="btn btn-secondary w-full" style="justify-content:center;padding:12px;font-size:14px;font-weight:600;background:var(--bg-base)" onclick="document.getElementById('csv-upload').click()">${icon('upload')} Select Backup File</button>
-              </div>
+            <!-- Legacy CSV Backup (Optional) -->
+            <div style="text-align:center;padding:8px">
+               <button class="btn btn-link" style="font-size:12px;color:var(--text-muted)" onclick="downloadCSV()">${icon('file-text', 'icon-xs')} Download Legacy CSV Backup</button>
             </div>
           </div>
         </div>
@@ -374,7 +361,7 @@ window.exportSectionCSV = function(section) {
 window.triggerImportCSV = function(section) {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.csv';
+  input.accept = '.csv,.xlsx';
   input.onchange = e => {
     const file = e.target.files[0];
     if (file) handleSectionFileImport(file, section);
@@ -384,13 +371,20 @@ window.triggerImportCSV = function(section) {
 
 async function handleSectionFileImport(file, section) {
   try {
-    const text = await file.text();
-    const newData = parseDatabaseFromCSV(text);
+    let newData;
+    if (file.name.endsWith('.xlsx')) {
+      const buffer = await file.arrayBuffer();
+      const { parseDatabaseFromXLSX } = await import('./xlsx_helper.js');
+      newData = await parseDatabaseFromXLSX(buffer);
+    } else {
+      const text = await file.text();
+      newData = parseDatabaseFromCSV(text);
+    }
+
     const { mergeData } = await import('./data.js');
     const stats = mergeData(newData);
     
     showToast(`Data imported. New: ${stats.added}, Updated: ${stats.replaced}`, 'success');
-    updateNavCounts();
     navigate(section);
   } catch (err) {
     console.error('Import failed:', err);
@@ -405,34 +399,97 @@ window.downloadCSV = function() {
   const a = document.createElement('a');
   a.setAttribute('hidden', '');
   a.setAttribute('href', url);
-  a.setAttribute('download', 'churchms_database_backup.csv');
+  const now = new Date().toISOString().split('T')[0];
+  a.setAttribute('download', `churchms_legacy_backup_${now}.csv`);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 };
+
+window.downloadFullBackup = function() {
+  const data = getFullBackupState();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('hidden', '');
+  a.setAttribute('href', url);
+  const now = new Date().toISOString().split('T')[0];
+  a.setAttribute('download', `churchms_full_backup_${now}.json`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Full backup (JSON) downloaded successfully.', 'success');
+};
+
+window.triggerRestoreBackup = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (file) handleRestoreBackup(file);
+  };
+  input.click();
+};
+
+async function handleRestoreBackup(file) {
+  if (!confirm('CRITICAL: This will PERMANENTLY OVERWRITE all current data in the system with the data from the backup file. Are you absolutely sure you want to proceed?')) {
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    
+    restoreFullBackupState(data);
+    
+    showToast('Database restored successfully! Reloading...', 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  } catch (err) {
+    console.error('Restore failed:', err);
+    showToast('Restore failed. Invalid backup file format.', 'error');
+  }
+}
 // ── Pastors Export Options Modal ─────────────────────────────
 window.openPastorsExportModal = function() {
   openModal(
     `${icon('download')} Export Pastors Sheet`,
     `<div style="display:flex;flex-direction:column;gap:16px;padding:4px 0">
       <p style="font-size:14px;color:var(--text-muted)">Choose what to include in the exported Excel file.</p>
-      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-base)">
-        <input type="checkbox" id="export-include-id" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-        <div>
-          <div style="font-size:14px;font-weight:600">Include Pastor ID</div>
-          <div style="font-size:12px;color:var(--text-muted)">Internal system ID — for admin use only. Uncheck to hide from staff.</div>
-        </div>
-      </label>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="export-opt-card no-style">
+          <input type="checkbox" id="export-include-id">
+          <div class="opt-content">
+            ${icon('fingerprint', 'icon-md')}
+            <div class="opt-title">Include IDs</div>
+            <div class="opt-desc">Internal system IDs for admin use.</div>
+          </div>
+        </label>
+        <label class="export-opt-card no-style">
+          <input type="checkbox" id="export-include-images" checked>
+          <div class="opt-content">
+            ${icon('image', 'icon-md')}
+            <div class="opt-title">Include Photos</div>
+            <div class="opt-desc">Embed images into the Excel sheet.</div>
+          </div>
+        </label>
+      </div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-primary" onclick="_runPastorsExport()">${icon('download')} Export Now</button>`
+     <button class="btn btn-primary" onclick="_runPastorsExport()">${icon('download')} Export Now</button>`,
+    'modal-md'
   );
 };
 
 window._runPastorsExport = async function() {
   const includeId = document.getElementById('export-include-id')?.checked || false;
+  const includeImages = document.getElementById('export-include-images')?.checked || false;
   closeModal();
-  await downloadPastorsSheet(includeId);
+  await downloadPastorsSheet(includeId, includeImages);
 };
 
 window.downloadPastorsSheet = async function(includeId = false) {
@@ -540,23 +597,29 @@ window.openChurchesExportModal = function() {
     `${icon('download')} Export Churches Sheet`,
     `<div style="display:flex;flex-direction:column;gap:16px;padding:4px 0">
       <p style="font-size:14px;color:var(--text-muted)">Choose what to include in the exported Excel file.</p>
-      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-base)">
-        <input type="checkbox" id="church-export-include-id" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-        <div>
-          <div style="font-size:14px;font-weight:600">Include Church ID</div>
-          <div style="font-size:12px;color:var(--text-muted)">Internal system ID — for admin use only. Uncheck to hide from staff.</div>
-        </div>
-      </label>
-      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-base)">
-        <input type="checkbox" id="church-export-include-pastor" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-        <div>
-          <div style="font-size:14px;font-weight:600">Include Pastor Info</div>
-          <div style="font-size:12px;color:var(--text-muted)">Pastor's Name, Wife's Name, Contact Number, and Church Address.</div>
-        </div>
-      </label>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="export-opt-card no-style">
+          <input type="checkbox" id="church-export-include-id">
+          <div class="opt-content">
+            ${icon('fingerprint', 'icon-md')}
+            <div class="opt-title">Include IDs</div>
+            <div class="opt-desc">Internal system IDs for admin use.</div>
+          </div>
+        </label>
+        <label class="export-opt-card no-style">
+          <input type="checkbox" id="church-export-include-pastor" checked>
+          <div class="opt-content">
+            ${icon('user-check', 'icon-md')}
+            <div class="opt-title">Pastor Info</div>
+            <div class="opt-desc">Include names and contact details.</div>
+          </div>
+        </label>
+      </div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-primary" onclick="_runChurchesExport()">${icon('download')} Export Now</button>`
+     <button class="btn btn-primary" onclick="_runChurchesExport()">${icon('download')} Export Now</button>`,
+    'modal-md'
   );
 };
 
@@ -570,26 +633,59 @@ window._runChurchesExport = async function() {
 // ── Districts Export Options Modal ───────────────────────────
 window.openDistrictsExportModal = function() {
   openModal(
-    `${icon('download')} Export Districts Sheet`,
+    `${icon('download')} Export Districts Data`,
     `<div style="display:flex;flex-direction:column;gap:16px;padding:4px 0">
-      <p style="font-size:14px;color:var(--text-muted)">Choose how to structure the District columns.</p>
-      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-base)">
-        <input type="checkbox" id="district-export-include-zones" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-        <div>
-          <div style="font-size:14px;font-weight:600">Include Zones</div>
-          <div style="font-size:12px;color:var(--text-muted)">Group churches under their respective Zone names.</div>
-        </div>
-      </label>
+      <p style="font-size:14px;color:var(--text-muted)">Select the type of report you want to generate.</p>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="export-opt-card">
+          <input type="radio" name="dist-export-type" value="standard" checked>
+          <div class="opt-content">
+            ${icon('table', 'icon-md')}
+            <div class="opt-title">Standard Sheet</div>
+            <div class="opt-desc">Churches grouped by Districts and Zones.</div>
+          </div>
+        </label>
+        <label class="export-opt-card">
+          <input type="radio" name="dist-export-type" value="detailed">
+          <div class="opt-content">
+            ${icon('file-text', 'icon-md')}
+            <div class="opt-title">District Info</div>
+            <div class="opt-desc">Detailed profiles with pastor images.</div>
+          </div>
+        </label>
+      </div>
+
+      <div id="dist-standard-options" style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-base)">
+          <input type="checkbox" id="district-export-include-zones" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          <span style="font-size:13px;font-weight:600">Include Zones</span>
+        </label>
+      </div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
-     <button class="btn btn-primary" onclick="_runDistrictsExport()">${icon('download')} Export Now</button>`
+     <button class="btn btn-primary" onclick="_runDistrictsExportUnified()">${icon('download')} Continue</button>`,
+    'modal-md'
   );
+
+  // Toggle options visibility based on radio selection
+  document.querySelectorAll('input[name="dist-export-type"]').forEach(rad => {
+    rad.addEventListener('change', () => {
+      document.getElementById('dist-standard-options').style.display = rad.value === 'standard' ? 'block' : 'none';
+    });
+  });
 };
 
-window._runDistrictsExport = async function() {
-  const includeZones = document.getElementById('district-export-include-zones')?.checked ?? true;
-  closeModal();
-  await downloadDistrictsSheet(includeZones);
+window._runDistrictsExportUnified = function() {
+  const type = document.querySelector('input[name="dist-export-type"]:checked')?.value;
+  if (type === 'standard') {
+    const includeZones = document.getElementById('district-export-include-zones')?.checked ?? true;
+    closeModal();
+    downloadDistrictsSheet(includeZones);
+  } else {
+    // Switch to step 2: Detailed Info scope selection
+    window.openDistrictInfoExportModal();
+  }
 };
 
 // ── District Info Export Options Modal ───────────────────────────
@@ -1394,6 +1490,46 @@ window.downloadReportSheet = async function(type, pastorId = null) {
   document.body.removeChild(a);
 };
 
+window.openAssignmentsExportModal = function() {
+  openModal(
+    `${icon('download')} Export Assignments`,
+    `<div style="display:flex;flex-direction:column;gap:16px;padding:4px 0">
+      <p style="font-size:14px;color:var(--text-muted)">Download the complete history of pastor assignments.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="export-opt-card">
+          <input type="radio" name="assign-export-format" value="csv" checked>
+          <div class="opt-content">
+            ${icon('file-spreadsheet', 'icon-md')}
+            <div class="opt-title">CSV Format</div>
+            <div class="opt-desc">Best for simple data processing.</div>
+          </div>
+        </label>
+        <label class="export-opt-card">
+          <input type="radio" name="assign-export-format" value="xlsx">
+          <div class="opt-content">
+            ${icon('file-text', 'icon-md', 'text-success')}
+            <div class="opt-title">Excel (.xlsx)</div>
+            <div class="opt-desc">Formatted with colors and styles.</div>
+          </div>
+        </label>
+      </div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${icon('x')} Cancel</button>
+     <button class="btn btn-primary" onclick="_runAssignmentsExport()">${icon('download')} Download</button>`,
+    'modal-md'
+  );
+};
+
+window._runAssignmentsExport = async function() {
+  const format = document.querySelector('input[name="assign-export-format"]:checked')?.value;
+  closeModal();
+  if (format === 'xlsx') {
+    await downloadReportsSheetXLSX();
+  } else {
+    await downloadReportsSheet();
+  }
+};
+
 window.downloadReportsSheet = async function() {
   const { exportAssignmentsToCSV } = await import('./csv_helper.js');
   const csv = exportAssignmentsToCSV();
@@ -1408,61 +1544,128 @@ window.downloadReportsSheet = async function() {
   a.click();
   document.body.removeChild(a);
 };
-window.handleFileImport = async function(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (!confirm('This will merge the uploaded backup into your current database. Duplicates will be skipped. Continue?')) {
-    input.value = ''; 
-    return;
-  }
-  const { mergeData } = await import('./data.js');
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = parseDatabaseFromCSV(e.target.result);
-      if (!data) throw new Error('Failed to parse CSV');
-      
-      const stats = mergeData(data);
-      
-      const modalBody = `
-        <div style="padding: 10px 0;">
-          <p style="margin-bottom: 20px; color: var(--text-muted);">Import process completed successfully. Here is the summary of changes:</p>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--success-dim); border-radius: var(--radius-md); color: var(--success);">
-              ${icon('check-circle', 'icon-md')}
-              <div>
-                <div style="font-weight: 700; font-size: 15px;">${stats.added} Records Added</div>
-                <div style="font-size: 12px; opacity: 0.8;">New records successfully inserted into the database.</div>
-              </div>
+
+// export as global functions used by UI
+window.downloadReportsSheetXLSX = async function () {
+  // Keep current UX: show info toast and call CSV download for now.
+  showToast('Excel format for assignments coming soon. Downloading CSV...', 'info');
+  await downloadReportsSheet();
+};
+
+window.handleFileImport = async function (input) {
+  try {
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    // Confirm destructive/merging operation with clear message
+    const proceed = confirm(
+      'This will merge the uploaded backup into your current database. Duplicates will be skipped. Continue?'
+    );
+    if (!proceed) {
+      input.value = '';
+      return;
+    }
+
+    // Dynamic import of merge function from data module
+    const { mergeData } = await import('./data.js');
+
+    // Parse uploaded file according to extension
+    let parsed;
+    const name = file.name.toLowerCase();
+
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      // XLSX: convert to buffer and delegate to helper
+      const buffer = await file.arrayBuffer();
+      const { parseDatabaseFromXLSX } = await import('./xlsx_helper.js');
+      if (typeof parseDatabaseFromXLSX !== 'function') {
+        throw new Error('XLSX parser not available (parseDatabaseFromXLSX).');
+      }
+      parsed = await parseDatabaseFromXLSX(buffer);
+    } else if (name.endsWith('.csv') || name.endsWith('.txt')) {
+      // CSV/TXT: try to import csv helper; fall back to global function if present
+      const text = await file.text();
+      let parseDatabaseFromCSV = null;
+      try {
+        const csvModule = await import('./csv_helper.js');
+        parseDatabaseFromCSV = csvModule.parseDatabaseFromCSV;
+      } catch (e) {
+        // ignore import error — will attempt global
+      }
+      if (typeof parseDatabaseFromCSV !== 'function') {
+        if (typeof window.parseDatabaseFromCSV === 'function') {
+          parseDatabaseFromCSV = window.parseDatabaseFromCSV;
+        } else {
+          throw new Error('CSV parser not available (parseDatabaseFromCSV).');
+        }
+      }
+      parsed = await parseDatabaseFromCSV(text);
+    } else if (name.endsWith('.json')) {
+      // Optional: support JSON backups
+      const text = await file.text();
+      parsed = JSON.parse(text);
+    } else {
+      throw new Error('Unsupported file type. Please upload .xlsx, .csv, .txt, or .json.');
+    }
+
+    if (!parsed) throw new Error('Failed to parse uploaded file.');
+
+    // Merge parsed data into current DB
+    // mergeData should return an object with numeric fields: added, replaced, skipped, etc.
+    const rawStats = await mergeData(parsed) ?? {};
+    const stats = {
+      added: Number(rawStats.added) || 0,
+      replaced: Number(rawStats.replaced) || 0,
+      skipped: Number(rawStats.skipped) || 0,
+      ...rawStats
+    };
+
+    // Build modal content (keeps visual structure you provided)
+    const modalBody = `
+      <div style="padding: 10px 0;">
+        <p style="margin-bottom: 20px; color: var(--text-muted);">
+          Import process completed successfully. Here is the summary of changes:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--success-dim); border-radius: var(--radius-md); color: var(--success);">
+            ${icon('check-circle', 'icon-md')}
+            <div>
+              <div style="font-weight: 700; font-size: 15px;">${stats.added} Records Added</div>
+              <div style="font-size: 12px; opacity: 0.8;">New records successfully inserted into the database.</div>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--info-dim); border-radius: var(--radius-md); color: var(--info);">
-              ${icon('refresh-cw', 'icon-md')}
-              <div>
-                <div style="font-weight: 700; font-size: 15px;">${stats.replaced} Records Updated</div>
-                <div style="font-size: 12px; opacity: 0.8;">Existing records synced and updated with new information.</div>
-              </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--info-dim); border-radius: var(--radius-md); color: var(--info);">
+            ${icon('refresh-cw', 'icon-md')}
+            <div>
+              <div style="font-weight: 700; font-size: 15px;">${stats.replaced} Records Updated</div>
+              <div style="font-size: 12px; opacity: 0.8;">Existing records synced and updated with new information.</div>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-base); border-radius: var(--radius-md); border: 1px solid var(--border-light); color: var(--text-secondary);">
-              ${icon('skip-forward', 'icon-md')}
-              <div>
-                <div style="font-weight: 700; font-size: 15px;">${stats.skipped} Records Skipped</div>
-                <div style="font-size: 12px; opacity: 0.8;">Duplicates identified by name or ID and skipped to prevent clones.</div>
-              </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-base); border-radius: var(--radius-md); border: 1px solid var(--border-light); color: var(--text-secondary);">
+            ${icon('skip-forward', 'icon-md')}
+            <div>
+              <div style="font-weight: 700; font-size: 15px;">${stats.skipped} Records Skipped</div>
+              <div style="font-size: 12px; opacity: 0.8;">Duplicates identified by name or ID and skipped to prevent clones.</div>
             </div>
           </div>
         </div>
-      `;
+      </div>
+    `;
 
-      openModal(
-        `${icon('database')} Import Results`,
-        modalBody,
-        `<button class="btn btn-primary" onclick="window.location.reload()">Finish & Reload</button>`,
-        'modal-md'
-      );
-    } catch (err) {
-      console.error(err);
-      alert('Error importing data. Please check the file format.');
-    }
-  };
-  reader.readAsText(file);
+    // Show results and provide a final action button
+    openModal(
+      `${icon('database')} Import Results`,
+      modalBody,
+      `<button class="btn btn-primary" onclick="window.location.reload()">Finish & Reload</button>`,
+      'modal-md'
+    );
+  } catch (err) {
+    console.error('Import error:', err);
+    // show a friendly alert + detailed console log (for debugging)
+    alert(`Error importing data: ${err?.message || 'Unknown error'}`);
+  } finally {
+    // always clear input to allow re-uploading the same file if needed
+    try { if (input) input.value = ''; } catch (e) { /* ignore */ }
+  }
 };
