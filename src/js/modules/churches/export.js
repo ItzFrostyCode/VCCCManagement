@@ -144,7 +144,7 @@ window.downloadChurchesSheet = async function (template = 'directory') {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
   const ws = workbook.addWorksheet('Churches');
   const today = new Date().toISOString().split('T')[0];
 

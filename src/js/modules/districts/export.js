@@ -207,7 +207,7 @@ window.downloadDistrictsSheet = async function (includeZones = true) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
   const ws = workbook.addWorksheet('Districts');
 
   const cols = [
@@ -299,7 +299,7 @@ window.downloadDistrictInfoSheet = async function (scope, sIds, incP, incW) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
 
   for (const d of targets) {
     const ws = workbook.addWorksheet(d.district_name.substring(0, 31));

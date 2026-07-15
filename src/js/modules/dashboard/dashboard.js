@@ -117,7 +117,7 @@ export function renderDashboard() {
           <div style="width:64px;height:64px;background:var(--accent-dim);border-radius:var(--radius-xl);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
             ${icon('church', 'icon-xl')}
           </div>
-          <h2 style="font-size:22px;font-weight:700;margin-bottom:8px">Welcome to ChurchMS</h2>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:8px">Welcome to the VCCC Pastoral Deployment &amp; Records System</h2>
           <p style="color:var(--text-muted);max-width:480px;margin:0 auto 24px">
             Start by setting up your organization structure. Add districts, zones, and churches. Then add your pastors and assign them.
           </p>

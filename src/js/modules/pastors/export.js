@@ -69,7 +69,7 @@ window.downloadPastorsSheet = async function (includeImages = true) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
   const ws = workbook.addWorksheet('Pastors');
 
   const cols = [

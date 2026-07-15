@@ -19,7 +19,7 @@ window.downloadReportSheet = async function (type, extraData) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
   const ws = workbook.addWorksheet('Report');
 
   if (type === 'timeline' && extraData) {

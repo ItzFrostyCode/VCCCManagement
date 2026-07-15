@@ -30,7 +30,7 @@ export function renderDelegates() {
       <div id="delegate-progress-export-node" style="position: absolute; left: -9999px; top: -9999px; width: 800px; background: white; padding: 40px; border-radius: 24px; color: #1e293b; font-family: sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
           <div>
-            <h1 style="font-size: 32px; font-weight: 800; margin: 0; color: #0f172a;">VCCC Management</h1>
+            <h1 style="font-size: 32px; font-weight: 800; margin: 0; color: #0f172a;">Victory Chapel Christian Center</h1>
             <p style="font-size: 16px; font-weight: 600; color: #64748b; margin: 4px 0 0 0;">Conference Delegate Progress Report</p>
           </div>
           <div style="text-align: right;">
@@ -68,7 +68,7 @@ export function renderDelegates() {
         </div>
         
         <div style="margin-top: 40px; padding-top: 24px; border-top: 1px dashed #e2e8f0; text-align: center; color: #94a3b8; font-size: 12px; font-weight: 600;">
-          VICTORY CALVARY CHRISTIAN CHURCH - MANAGEMENT SYSTEM OFFICIAL REPORT
+          VICTORY CHAPEL CHRISTIAN CENTER - DAVAO OFFICIAL REPORT
         </div>
       </div>
 

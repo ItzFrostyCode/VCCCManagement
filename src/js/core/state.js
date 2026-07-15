@@ -61,7 +61,7 @@ function loadFromStorage() {
     parsed.isDataLoaded = true;
     return parsed;
   } catch (e) {
-    console.warn('[ChurchMS] Load failed:', e);
+    console.warn('[VCCC-PDRS] Load failed:', e);
     return null;
   }
 }
@@ -140,7 +140,7 @@ function _persist() {
       mealCutoffSettings,
     }));
   } catch (e) {
-    console.error('[ChurchMS] Storage error:', e);
+    console.error('[VCCC-PDRS] Storage error:', e);
   }
 }
 

@@ -31,7 +31,7 @@ function buildIdCardHTML(info) {
   const meta = TYPE_META[info.type] || { label: info.type || 'Delegate', color: '#64748b' };
   return `
     <div class="id-card-render" style="width: 320px; padding: 28px 24px; background: linear-gradient(160deg, #ffffff, #f8fafc); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: sans-serif; text-align: center; border: 1px solid #e2e8f0; box-sizing: border-box;">
-      <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">VCCC Management</div>
+      <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Victory Chapel Christian Center</div>
       <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 20px;">Delegate Identification</div>
       <div style="width: 90px; height: 90px; border-radius: 50%; background: ${meta.color}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; margin: 0 auto 16px; border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
         ${initials(info.full_name)}

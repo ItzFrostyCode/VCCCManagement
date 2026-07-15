@@ -46,7 +46,7 @@ window.downloadAssignmentsSheet = async function () {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VCCC ChurchMS';
+  workbook.creator = 'VCCC Pastoral Deployment & Records System';
   const ws = workbook.addWorksheet('Active Assignments');
 
   ws.columns = [
