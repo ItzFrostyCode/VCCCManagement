@@ -5,58 +5,99 @@
 //                   suspended | international | interim
 // ============================================================
 
-import { pastors, churches, districts, zones, churchAssignments } from './data.js';
-import { icon, statusBadge, assignmentBadge, formatDate, formatDateRange, esc, pastorAvatar } from './utils.js';
+import { pastors, churches, districts, zones, churchAssignments, disciples } from '../../core/state.js';
+import { icon, statusBadge, assignmentBadge, formatDate, formatDateRange, esc, pastorAvatar } from '../../shared/utils/helpers.js';
+
+const REPORT_META = {
+  suspended:     { label: 'Suspended',        iconName: 'ban' },
+  undeployed:    { label: 'Undeployed',       iconName: 'user-x' },
+  interim:       { label: 'Interim',          iconName: 'clock' },
+  vacant:        { label: 'Vacant Churches',  iconName: 'alert-triangle' },
+  'zone-counts': { label: 'Zone Coverage',    iconName: 'bar-chart-2' },
+  international: { label: 'International',   iconName: 'globe' },
+  disciples:     { label: 'Disciples',        iconName: 'user-check' },
+  timeline:      { label: 'Timeline',         iconName: 'clock' },
+};
+
+let currentReportType = 'suspended';
+let reportOutsideClickBound = false;
 
 export function renderReports() {
   const content = document.getElementById('page-content');
   document.getElementById('topbar-actions').innerHTML = '';
 
   content.innerHTML = `<div class="fade-in">
-    <div class="filter-bar tabs-container" style="margin-bottom:16px">
-      <!-- Desktop Tabs -->
-      <div class="desktop-tabs">
-        <button type="button" class="tab-btn active" data-report="suspended" onclick="switchReport('suspended',this)">${icon('ban','icon-xs')} Suspended</button>
-        <button type="button" class="tab-btn" data-report="undeployed" onclick="switchReport('undeployed',this)">${icon('user-x','icon-xs')} Undeployed</button>
-        <button type="button" class="tab-btn" data-report="interim" onclick="switchReport('interim',this)">${icon('clock','icon-xs')} Interim</button>
-        <button type="button" class="tab-btn" data-report="vacant" onclick="switchReport('vacant',this)">${icon('alert-triangle','icon-xs')} Vacant Churches</button>
-        <button type="button" class="tab-btn" data-report="zone-counts" onclick="switchReport('zone-counts',this)">${icon('bar-chart-2','icon-xs')} Zone Coverage</button>
-        <button type="button" class="tab-btn" data-report="international" onclick="switchReport('international',this)">${icon('globe','icon-xs')} International</button>
-        <button type="button" class="tab-btn" data-report="timeline" onclick="switchReport('timeline',this)">${icon('clock','icon-xs')} Timeline</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+      <h1 style="margin:0; font-size:20px; font-weight:800;">Reports</h1>
+
+      <div class="filter-trigger-wrap">
+        <button type="button" class="filter-trigger-btn active" style="width:auto; padding:0 14px; gap:8px;" onclick="toggleReportFilterPanel(event)">
+          ${icon(REPORT_META[currentReportType].iconName, 'icon-sm')}
+          <span style="font-size:13px; font-weight:700;">${REPORT_META[currentReportType].label}</span>
+          ${icon('chevron-down', 'icon-xs')}
+        </button>
+        <div id="report-filter-panel" class="filter-dropdown-panel">
+          <div class="filter-section">
+            <div class="filter-section-label">Report Type</div>
+            <div class="filter-chip-list" id="report-type-chips">
+              ${Object.entries(REPORT_META).map(([type, meta]) => renderReportChip(type, meta)).join('')}
+            </div>
+          </div>
+        </div>
       </div>
-      <!-- Mobile Dropdown -->
-      <select class="mobile-tabs-dropdown hidden" onchange="switchReportDropdown(this.value)">
-        <option value="suspended">Suspended</option>
-        <option value="undeployed">Undeployed</option>
-        <option value="interim">Interim</option>
-        <option value="vacant">Vacant Churches</option>
-        <option value="zone-counts">Zone Coverage</option>
-        <option value="international">International</option>
-        <option value="timeline">Timeline</option>
-      </select>
     </div>
     <div id="report-content"></div>
   </div>`;
 
-  renderReport('suspended');
+  renderReport(currentReportType);
   lucide.createIcons();
+  bindReportFilterOutsideClick();
 }
 
-window.switchReport = function(type, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  
-  // Sync dropdown if called from tab
-  const dropdown = document.querySelector('.mobile-tabs-dropdown');
-  if (dropdown) dropdown.value = type;
+function renderReportChip(type, meta) {
+  const isActive = currentReportType === type;
+  return `
+    <button type="button" class="filter-chip${isActive ? ' active' : ''}" data-report="${type}" onclick="switchReport('${type}')">
+      ${icon(meta.iconName, 'icon-xs')} ${meta.label}
+    </button>
+  `;
+}
 
-  renderReport(type);
+window.toggleReportFilterPanel = function(event) {
+  event.stopPropagation();
+  document.getElementById('report-filter-panel')?.classList.toggle('open');
 };
 
-window.switchReportDropdown = function(type) {
-  // Find matching tab button and set it active
-  const btn = document.querySelector(`.tab-btn[data-report="${type}"]`);
-  switchReport(type, btn);
+function bindReportFilterOutsideClick() {
+  if (reportOutsideClickBound) return;
+  reportOutsideClickBound = true;
+  document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('#page-content .filter-trigger-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('report-filter-panel')?.classList.remove('open');
+    }
+  });
+}
+
+window.switchReport = function(type) {
+  currentReportType = type;
+
+  document.querySelectorAll('#report-type-chips .filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.report === type);
+  });
+
+  const btn = document.querySelector('.filter-trigger-wrap .filter-trigger-btn');
+  if (btn) {
+    btn.innerHTML = `
+      ${icon(REPORT_META[type].iconName, 'icon-sm')}
+      <span style="font-size:13px; font-weight:700;">${REPORT_META[type].label}</span>
+      ${icon('chevron-down', 'icon-xs')}
+    `;
+    lucide.createIcons();
+  }
+
+  document.getElementById('report-filter-panel')?.classList.remove('open');
+  renderReport(type);
 };
 
 function renderReport(type) {
@@ -69,6 +110,7 @@ function renderReport(type) {
     case 'vacant':       container.innerHTML = reportVacant();       break;
     case 'zone-counts':  container.innerHTML = reportZoneCounts();   break;
     case 'international':container.innerHTML = reportInternational();break;
+    case 'disciples':    container.innerHTML = reportDisciples();    break;
     case 'timeline':     container.innerHTML = reportTimeline();     break;
   }
   lucide.createIcons();
@@ -249,6 +291,30 @@ function reportInternational() {
 
   return reportTable('International Records', `<span class="badge badge-international">${total} records</span>`,
     '<th>Pastor</th><th>Status</th><th>Church</th><th>Period</th><th>Notes</th>', rows.join(''), 'international');
+}
+
+// ── Disciples ──────────────────────────────────────────────
+function reportDisciples() {
+  if (disciples.length === 0) return emptyReport('No disciples registered yet.');
+
+  const rows = [...disciples]
+    .sort((a, b) => a.full_name.localeCompare(b.full_name))
+    .map(d => {
+      const p = d.pastor_id ? pastors.find(x => x.pastor_id === d.pastor_id) : null;
+      const church = d.church_id ? churches.find(c => c.church_id === d.church_id) : null;
+      const dist = d.district_id ? districts.find(x => x.district_id === d.district_id) : null;
+      return `<tr>
+        <td><div class="pastor-name">${esc(d.full_name)}</div></td>
+        <td data-label="Contact" class="td-muted">${esc(d.contact_number) || '—'}</td>
+        <td data-label="Birthdate" class="td-muted">${d.birth_date ? formatDate(d.birth_date) : '—'}</td>
+        <td data-label="Mentor Pastor">${p ? esc(p.pastor_name) : '<span class="td-muted">Unassigned</span>'}</td>
+        <td data-label="Church">${church ? esc(church.church_name) : '<span class="td-muted">—</span>'}</td>
+        <td data-label="District" class="td-muted">${dist ? esc(dist.district_name) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+  return reportTable('Disciples Directory', `<span class="badge badge-active">${disciples.length} disciples</span>`,
+    '<th>Full Name</th><th>Contact</th><th>Birthdate</th><th>Mentor Pastor</th><th>Church</th><th>District</th>', rows, 'disciples-export');
 }
 
 // ── Pastor Timeline ──────────────────────────────────────────

@@ -4,8 +4,9 @@
 // ============================================================
 
 import { 
-  districts, zones, churches, pastors, churchAssignments, pastorEvents, counters
-} from './data.js';
+  districts, zones, churches, pastors, churchAssignments, pastorEvents, counters,
+  disciples, conferences, mealAttendance
+} from '../../core/state.js';
 
 // ── Columns Configuration ────────────────────────────────────
 
@@ -16,6 +17,9 @@ const COLS = {
   PASTOR:   ['pastor_id', 'pastor_name', 'wife_name', 'contact_number', 'image_url', 'wife_image_url', 'birth_date', 'wife_birth_date', 'pastoring_start_date', 'status_code', 'notes', 'created_at'],
   ASSIGN:   ['assignment_id', 'pastor_id', 'district_id', 'church_id', 'assignment_type_code', 'start_date', 'end_date', 'notes', 'created_at'],
   EVENT:    ['event_id', 'pastor_id', 'event_type', 'event_date', 'details', 'created_at'],
+  DISCIPLE: ['disciple_id', 'pastor_id', 'disciple_name', 'contact_number', 'qr_code', 'notes', 'created_at'],
+  CONF:     ['conference_id', 'theme', 'location', 'start_date', 'end_date', 'notes', 'created_at'],
+  MEAL_ATTEND: ['attendance_id', 'conference_id', 'pastor_id', 'qr_code', 'day_number', 'meal_slot', 'scanned_at', 'notes'],
 };
 
 // ── CSV Generation ───────────────────────────────────────────
@@ -50,7 +54,14 @@ export function exportDatabaseToCSV() {
   churchAssignments.forEach(a => rows.push(toCSV('ASSIGN', a, COLS.ASSIGN)));
   // 6. Events
   pastorEvents.forEach(e => rows.push(toCSV('EVENT', e, COLS.EVENT)));
-  // 7. Counters (special format)
+  // 7. Disciples
+  disciples.forEach(ds => rows.push(toCSV('DISCIPLE', ds, COLS.DISCIPLE)));
+  // 8. Conferences
+  conferences.forEach(cf => rows.push(toCSV('CONF', cf, COLS.CONF)));
+  // 9. Meal Attendance
+  mealAttendance.forEach(ma => rows.push(toCSV('MEAL_ATTEND', ma, COLS.MEAL_ATTEND)));
+  
+  // 10. Counters (special format)
   Object.keys(counters).forEach(k => {
     rows.push(`COUNTER,${k},${counters[k]}`);
   });
@@ -144,6 +155,9 @@ export function parseDatabaseFromCSV(csvText) {
     pastors: [],
     churchAssignments: [],
     pastorEvents: [],
+    disciples: [],
+    conferences: [],
+    mealAttendance: [],
     counters: {}
   };
 
@@ -166,7 +180,10 @@ export function parseDatabaseFromCSV(csvText) {
         case 'CHURCH':   data.churches.push(fromCSV(vals, COLS.CHURCH)); break;
         case 'PASTOR':   data.pastors.push(fromCSV(vals, COLS.PASTOR)); break;
         case 'ASSIGN':   data.churchAssignments.push(fromCSV(vals, COLS.ASSIGN)); break;
-        case 'EVENT':    data.pastorEvents.push(fromCSV(vals, COLS.EVENT)); break;
+        case 'EVENT':       data.pastorEvents.push(fromCSV(vals, COLS.EVENT)); break;
+        case 'DISCIPLE':    data.disciples.push(fromCSV(vals, COLS.DISCIPLE)); break;
+        case 'CONF':        data.conferences.push(fromCSV(vals, COLS.CONF)); break;
+        case 'MEAL_ATTEND': data.mealAttendance.push(fromCSV(vals, COLS.MEAL_ATTEND)); break;
         case 'COUNTER':  
           if (vals[0] && vals[1]) data.counters[vals[0]] = Number(vals[1]); 
           break;

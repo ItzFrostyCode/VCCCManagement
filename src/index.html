@@ -11,9 +11,14 @@
   <meta property="og:url" content="https://vcccmanagement.netlify.app/">
   <meta property="og:type" content="website">
   <meta name="robots" content="index, follow">
+
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      corePlugins: {
+        preflight: false, // Disables Tailwind's CSS reset to preserve existing custom styles
+      },
       theme: {
         extend: {
           colors: {
@@ -24,10 +29,16 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="../css/style.css?v=3">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2/html5-qrcode.min.js"></script>
 </head>
 <body>
+<div id="startup-loader" style="position: fixed; inset: 0; background: var(--bg-base, #ffffff); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s;">
+  <div style="width: 48px; height: 48px; border: 4px solid var(--accent, #4f46e5); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+  <div style="margin-top: 20px; font-weight: 700; color: var(--text-primary, #1e293b);">Loading...</div>
+</div>
 <div class="app-layout">
   <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <aside class="sidebar" id="sidebar">
@@ -66,6 +77,23 @@
         <span class="nav-icon"><i data-lucide="church"></i></span>
         <span class="nav-text">Churches</span>
       </div>
+      <div class="nav-section-label">Events & Delegates</div>
+      <div class="nav-item" data-page="conferences">
+        <span class="nav-icon"><i data-lucide="calendar"></i></span>
+        <span class="nav-text">Conferences</span>
+      </div>
+      <div class="nav-item" data-page="meals">
+        <span class="nav-icon"><i data-lucide="utensils"></i></span>
+        <span class="nav-text">Meals Monitor</span>
+      </div>
+      <div class="nav-item" data-page="disciples">
+        <span class="nav-icon"><i data-lucide="user-check"></i></span>
+        <span class="nav-text">Disciples</span>
+      </div>
+      <div class="nav-item" data-page="delegates">
+        <span class="nav-icon"><i data-lucide="scan-line"></i></span>
+        <span class="nav-text">Delegates & QR</span>
+      </div>
       <div class="nav-section-label">Analytics</div>
       <div class="nav-item" data-page="reports">
         <span class="nav-icon"><i data-lucide="bar-chart-2"></i></span>
@@ -78,7 +106,7 @@
       <div style="flex-grow:1"></div>
       <div class="nav-item" data-page="help" style="margin-top:auto">
         <span class="nav-icon"><i data-lucide="help-circle"></i></span>
-        Help & Guide
+        <span class="nav-text">Help & Guide</span>
       </div>
     </nav>
   </aside>

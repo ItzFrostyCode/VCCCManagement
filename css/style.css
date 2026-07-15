@@ -91,9 +91,11 @@ img { max-width:100%; }
   display: none; 
 }
 .sidebar-logo {
-  padding:var(--space-6);
+  height:var(--topbar-h);
+  padding:0 var(--space-6);
   border-bottom:1px solid var(--border);
   display:flex; align-items:center; gap:var(--space-3);
+  flex-shrink:0;
 }
 .logo-icon {
   width:40px; height:40px;
@@ -218,6 +220,31 @@ img { max-width:100%; }
 .stat-value  { font-size:28px; font-weight:800; line-height:1; }
 .stat-label  { font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:500; }
 .stat-change { font-size:11px; font-weight:600; margin-top:4px; }
+
+/* Dashboard sections (grouped to mirror the sidebar's nav categories).
+   Flexbox instead of grid so an uneven card count in the last row grows
+   to fill the width instead of leaving empty grid cells. */
+.dashboard-section-title {
+  font-size:13px; font-weight:800; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.08em;
+  margin:32px 0 14px; display:flex; align-items:center; gap:8px;
+}
+.dashboard-section-title:first-child { margin-top:0; }
+.dashboard-stats-row {
+  display:flex; flex-wrap:wrap;
+  gap:var(--space-5); margin-bottom:var(--space-8);
+}
+.dashboard-stats-row .stat-card { flex:1 1 240px; }
+.dashboard-quicklink-row {
+  display:flex; flex-wrap:wrap;
+  gap:var(--space-5); margin-bottom:var(--space-8);
+}
+.dashboard-quicklink {
+  flex:1 1 220px;
+  display:flex; align-items:center; gap:14px;
+  padding:var(--space-5) var(--space-6);
+  cursor:pointer;
+}
 .dashboard-grid {
   display:grid;
   grid-template-columns:1fr 340px;
@@ -249,6 +276,7 @@ tbody td { padding:10px var(--space-4); color:var(--text-primary); vertical-alig
 .badge-suspended   { background:var(--danger-dim);  color:var(--danger); }
 .badge-on_leave    { background:var(--warning-dim); color:var(--warning); }
 .badge-undeployed  { background:var(--purple-dim);  color:var(--purple); }
+.badge-deceased    { background:var(--bg-elevated);  color:var(--text-muted); }
 .badge-regular     { background:var(--accent-dim);  color:var(--accent); }
 .badge-pioneering  { background:var(--success-dim); color:var(--success); }
 .badge-training    { background:var(--info-dim);    color:var(--info); }
@@ -296,10 +324,14 @@ tbody td { padding:10px var(--space-4); color:var(--text-primary); vertical-alig
 .photo-preview-circle img { width: 100%; height: 100%; object-fit: cover; }
 label:not(.no-style) { font-size:12px; font-weight:600; color:var(--text-secondary); letter-spacing:0.04em; text-transform:uppercase; }
 input[type="text"],input[type="date"],input[type="tel"],input[type="url"],
-input[type="number"],input[type="email"],select,textarea {
+input[type="number"],input[type="email"],input[type="time"],select,textarea {
   background:var(--bg-elevated); border:1px solid var(--border);
   border-radius:var(--radius-md); padding:10px var(--space-4);
-  color:var(--text-primary); font-size:14px;
+  color:var(--text-primary);
+  /* 16px minimum, not 14px: iOS Safari auto-zooms the whole page on focus
+     for any text input under 16px - this is the single most common cause
+     of the "annoying zoom" on iPhone/iPad form fields. */
+  font-size:16px;
   transition:border-color var(--transition),box-shadow var(--transition);
   width:100%;
 }
@@ -318,8 +350,75 @@ select {
 }
 select option { background:var(--bg-elevated); }
 textarea { resize:vertical; min-height:80px; }
+
+/* Searchable select (used for pastor/district-leader/church pickers in modals) */
+.search-select-wrapper { position:relative; }
+input.search-select-input { padding-left:40px; }
+.search-select-options {
+  display:none; position:absolute; top:calc(100% + 4px); left:0; right:0;
+  background:var(--bg-surface); border:1px solid var(--border);
+  border-radius:var(--radius-md); box-shadow:var(--shadow-lg);
+  max-height:220px; overflow-y:auto; z-index:20;
+}
+.search-select-options.open { display:block; }
+.search-select-option, .search-select-item {
+  padding:10px var(--space-4); font-size:14px; cursor:pointer;
+  transition:background var(--transition);
+  display:flex; align-items:center; gap:10px;
+}
+.search-select-option:hover, .search-select-item:hover { background:var(--bg-hover); }
+.search-select-option.muted, .search-select-empty {
+  color:var(--text-muted); font-size:13px; cursor:default;
+}
+.search-select-option.muted:hover { background:none; }
+
+/* Icon-trigger filter dropdown (Pastors/Churches search bars): a single
+   funnel-icon button replaces the always-visible status tab row + labeled
+   "Filter by District:" select, so the search row stays a plain single
+   line instead of a boxed panel with a pill-tab row stacked above it. */
+.filter-trigger-wrap { position:relative; flex-shrink:0; }
+.filter-trigger-btn {
+  position:relative; width:46px; height:46px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg-elevated); border:1px solid var(--border);
+  border-radius:var(--radius-md); cursor:pointer;
+  color:var(--text-secondary); transition:all var(--transition);
+}
+.filter-trigger-btn:hover { border-color:var(--accent); color:var(--accent); }
+.filter-trigger-btn.active { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+.filter-badge {
+  position:absolute; top:-4px; right:-4px;
+  width:16px; height:16px; border-radius:50%;
+  background:var(--accent); color:#fff;
+  font-size:9px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+}
+.filter-dropdown-panel {
+  display:none; position:absolute; top:calc(100% + 8px); right:0;
+  width:280px; max-width:calc(100vw - 32px);
+  background:var(--bg-surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);
+  padding:16px; z-index:30;
+}
+.filter-dropdown-panel.open { display:block; }
+.filter-section { margin-bottom:16px; }
+.filter-section:last-child { margin-bottom:0; }
+.filter-section-label {
+  font-size:11px; font-weight:800; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;
+}
+.filter-chip-list { display:flex; flex-wrap:wrap; gap:6px; }
+.filter-chip {
+  padding:6px 12px; border-radius:20px; border:1px solid var(--border);
+  background:var(--bg-elevated); color:var(--text-muted);
+  font-size:12px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:6px; transition:all var(--transition);
+  white-space:nowrap;
+}
+.filter-chip:hover { border-color:var(--accent); }
+.filter-chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
 .form-hint { font-size:12px; color:var(--text-muted); }
-.form-section-title { font-size:13px; font-weight:600; color:var(--text-secondary); margin:var(--space-4) 0 var(--space-3); padding-bottom:var(--space-2); border-bottom:1px solid var(--border); }
 .img-upload-wrap { display:flex; flex-direction:column; gap:8px; }
 .img-preview {
   width:100px; height:100px; border-radius:var(--radius-lg);
@@ -335,6 +434,7 @@ textarea { resize:vertical; min-height:80px; }
   border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-weight:700; color:#ffffff; flex-shrink:0; overflow:hidden;
 }
+.avatar-xs  { width:24px; height:24px; font-size:10px; }
 .avatar-sm  { width:32px; height:32px; font-size:12px; }
 .avatar-md  { width:40px; height:40px; font-size:14px; }
 .avatar-lg  { width:56px; height:56px; font-size:18px; }
@@ -358,7 +458,7 @@ textarea { resize:vertical; min-height:80px; }
 .modal-overlay {
   position:fixed; inset:0;
   background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);
-  z-index:200; display:flex; align-items:center; justify-content:center;
+  z-index:1100; display:flex; align-items:center; justify-content:center;
   padding:var(--space-6); opacity:0; pointer-events:none;
   transition:opacity var(--transition-slow);
 }
@@ -476,19 +576,7 @@ textarea { resize:vertical; min-height:80px; }
 .timeline-content { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px var(--space-4); }
 .timeline-content strong { font-size:14px; }
 .timeline-content p { font-size:13px; color:var(--text-muted); margin-top:4px; }
-.tabs-container { display: flex; align-items: center; width: 100%; }
-.desktop-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.mobile-tabs-dropdown { display: none; width: 100%; padding: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); }
 .tabs { display:flex; gap:4px; margin-bottom:var(--space-5); flex-wrap:wrap; }
-.tab-btn {
-  padding:8px 16px; border-radius:var(--radius-md);
-  font-size:14px; font-weight:500; border:1px solid var(--border);
-  background:var(--bg-elevated); color:var(--text-secondary);
-  cursor:pointer; transition:all var(--transition);
-  display:flex; align-items:center; gap:6px;
-}
-.tab-btn:hover { background:var(--bg-hover); color:var(--text-primary); }
-.tab-btn.active { background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
 
 /* Premium Segmented Control for modern cross-platform tabs */
 .segmented-control {
@@ -503,30 +591,6 @@ textarea { resize:vertical; min-height:80px; }
   scrollbar-width: none; /* Firefox */
 }
 .segmented-control::-webkit-scrollbar { display: none; } /* Safari and Chrome */
-.segmented-btn {
-  padding: 8px 16px;
-  text-align: center;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: none;
-  background: transparent;
-  flex-shrink: 0;
-}
-.segmented-btn:hover { color: var(--text-primary); }
-.segmented-btn.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
-  font-weight: 600;
-}
 .activity-list { display:flex; flex-direction:column; gap:12px; }
 .activity-item { display:flex; align-items:flex-start; gap:12px; }
 .activity-icon { width:36px; height:36px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -714,8 +778,9 @@ textarea { resize:vertical; min-height:80px; }
   input[type="number"], input[type="email"], textarea { min-height: 46px; }
   select { min-height: 44px; }
   .nav-item { min-height: 44px; }
-  /* Filter bar controls: compact */
-  .filter-bar select, .filter-bar input { min-height: 40px; font-size: 14px; }
+  /* Filter bar controls: compact (font-size stays 16px - anything smaller
+     re-triggers iOS Safari's zoom-on-focus) */
+  .filter-bar select, .filter-bar input { min-height: 40px; font-size: 16px; }
   /* Compact icon-only buttons */
   .btn-icon, .btn-icon-sm { min-height: unset; }
   /* FAB stays circular */
@@ -748,13 +813,6 @@ textarea { resize:vertical; min-height:80px; }
     scrollbar-width: none;
   }
   .segmented-control::-webkit-scrollbar { display: none; }
-  .segmented-btn {
-    padding: 7px 11px;
-    font-size: 12px;
-    gap: 4px;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
 
   /* ── Stats Grid ──────────────────────────────────────────── */
   .stats-grid {
@@ -843,6 +901,7 @@ textarea { resize:vertical; min-height:80px; }
   padding-top: 12px !important;
   /* add additional action styles here */
 }
+}
 
 /* Desktop / tablet breakpoints */
 @media (max-width: 1024px) {
@@ -854,6 +913,15 @@ textarea { resize:vertical; min-height:80px; }
     padding: 0 16px;
     height: 64px;
   }
+
+  /* The sidebar becomes a slide-in overlay below desktop width - it was
+     staying permanently on-screen (translateX(0) has no responsive
+     override) while .main-content kept its full 260px margin-left,
+     squeezing all page content into a ~100px sliver on tablet/mobile. */
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg, 0 20px 40px rgba(0,0,0,0.25)); }
+  .main-content { margin-left: 0; }
+  .sidebar .sidebar-close-btn { display: inline-flex; }
 }
 
 @media (max-width: 768px) {
@@ -879,6 +947,7 @@ textarea { resize:vertical; min-height:80px; }
   .page-content {
     padding: 66px 16px 84px 16px !important;
   }
+
 }
 
 /* ── Small screens (≤320px — older iPhones, narrow Androids) ───────────── */
@@ -900,12 +969,6 @@ textarea { resize:vertical; min-height:80px; }
 
   .page-content {
     padding: 60px 12px 78px 12px !important;
-  }
-
-  /* Tabs */
-  .segmented-btn {
-    padding: 5px 8px;
-    font-size: 11px;
   }
 
   /* Stats grid: still 2 cols but more compact */
@@ -984,17 +1047,6 @@ textarea { resize:vertical; min-height:80px; }
 
   .page-content {
     padding: 58px 10px 74px 10px !important;
-  }
-
-  /* Segmented: icon only on very small screens */
-  .segmented-btn {
-    padding: 5px 6px;
-    font-size: 10px;
-    gap: 2px;
-  }
-  .segmented-btn svg,
-  .segmented-btn i {
-    display: none;
   }
 
   /* Stats: stack to 1 column (keeps compact layout) */
@@ -1110,6 +1162,16 @@ textarea { resize:vertical; min-height:80px; }
 
 .draggable-church { cursor: grab; }
 .draggable-church:active { cursor: grabbing; }
+.church-row-responsive {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px;
+  padding: 10px 12px; margin-bottom: 6px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); transition: border-color var(--transition), box-shadow var(--transition);
+}
+.church-row-responsive:last-child { margin-bottom: 0; }
+.church-row-responsive:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
+.church-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.church-pastor-info { display: flex; align-items: center; gap: 8px; }
 .drop-zone { transition: background 0.2s, box-shadow 0.2s; min-height: 40px; }
 .drop-zone.drag-over {
   background: var(--accent-dim) !important;
@@ -1161,9 +1223,20 @@ textarea { resize:vertical; min-height:80px; }
 .card.expanded .card-body-content { display: block; }
 .district-header-row {
   display: flex; align-items: center; justify-content: space-between;
-  cursor: pointer; padding-bottom: 0;
+  cursor: pointer; padding: var(--space-5) var(--space-6);
 }
 .district-header-row:hover .district-name { color: var(--accent); }
+.district-body { padding: 0 var(--space-6) var(--space-6); }
+.district-stats-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  margin-top: 2px;
+}
+.leader-badge {
+  display: flex; align-items: center; position: relative;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated); border-radius: var(--radius-md);
+}
 .grid-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1178,6 +1251,5 @@ textarea { resize:vertical; min-height:80px; }
   padding-bottom: 0;
 }
 .filter-bar > *, .tabs > * {
-  flex-shrink: 1; 
-}
+  flex-shrink: 1;
 }
